@@ -364,6 +364,8 @@ body.sidehidden .side{display:none;}
     <div id="cityModal"><div class="cm-panel">
       <div class="cm-title" id="cmTitle">Новый город</div>
       <input type="text" id="cmName" placeholder="Название (можно оставить пустым)" autocomplete="off">
+      <input type="text" id="cmCountry" list="cmCountryList" placeholder="Принадлежность (страна)" autocomplete="off">
+      <datalist id="cmCountryList"></datalist>
       <select id="cmType">
         <option value="capital">Столица (с порталом, оранжевый ромб)</option>
         <option value="capnp">Столица без портала (оранжевый круг)</option>
@@ -374,6 +376,7 @@ body.sidehidden .side{display:none;}
       <label class="cm-port"><input type="checkbox" id="cmPort"> ⚓ Портовый город — есть выход к воде (река/море)</label>
       <label class="cm-port"><input type="checkbox" id="cmWrap"> ↵ Название в две строки (на карте)</label>
       <div class="cm-btns"><button class="btn sm" id="cmAdd">Добавить</button><button class="btn ghost sm" id="cmCancel">Отмена</button></div>
+      <button class="btn ghost sm" id="cmDelete" style="display:none;color:#c0392b">✕ Удалить город</button>
     </div></div>
   </div>
 </div>
@@ -515,16 +518,23 @@ function loadConfig(){
 // Приоритет данных:
 //  • обычный юзер → config.json из папки (опубликованные данные)
 //  • редактор (#editor) → localStorage (твоя рабочая копия), иначе config.json
+// EDITOR_DATA_VER: увеличивай на 1, когда на диске появились важные правки (новые страны и т.п.),
+// которые должны ОДИН РАЗ перебить твою локальную копию в браузере (без ручного импорта).
+const EDITOR_DATA_VER = 2;
 async function resolveConfig(){
   let base=structuredClone(DEFAULT_CONFIG), gotDisk=false, disk=null;
   try{
     const r=await fetch(verUrl('config.json'),{cache:'no-store'});
     if(r.ok){ disk=await r.json(); base=Object.assign(base, disk); gotDisk=true; }
   }catch(e){}
-  // В редакторе localStorage = твоя рабочая копия (правки не теряются при перезагрузке).
-  if(EDITOR || !gotDisk){
+  // В редакторе localStorage = твоя рабочая копия (правки не теряются при перезагрузке),
+  // НО если версия данных на диске новее сохранённой — один раз берём диск как есть.
+  const storedVer = Number(localStorage.getItem('riftMapDataVer')||0);
+  const useLocal = (EDITOR || !gotDisk) && storedVer===EDITOR_DATA_VER;
+  if(useLocal){
     try{ const s=localStorage.getItem('riftMapConfig'); if(s) base=Object.assign(base, JSON.parse(s)); }catch(e){}
   }
+  if(EDITOR) localStorage.setItem('riftMapDataVer', String(EDITOR_DATA_VER));
   // ПУТИ К ФАЙЛАМ КАРТ — всегда с диска/дефолта, не из localStorage (он мог устареть)
   base.mapSrc   = (disk&&disk.mapSrc)   || DEFAULT_CONFIG.mapSrc;
   base.mapAdmin = (disk&&disk.mapAdmin) || DEFAULT_CONFIG.mapAdmin;
@@ -1400,10 +1410,11 @@ function cityTypeName(t){ return t==='capital'?'Столица':t==='capnp'?'С�
 function escTip(s){ return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 function showCityTip(c,clientX,clientY){
   const el=document.getElementById('cityTip'); if(!el) return;
-  let h='<b>'+escTip(c.name||'Город')+'</b><span class="ct-type">'+cityTypeName(c.type)+'</span>';
+  const typeCountry=cityTypeName(c.type)+(c.country?', '+escTip(c.country):'');
+  let h='<b>'+escTip(c.name||'Город')+'</b><span class="ct-type">'+typeCountry+'</span>';
   if(hasGate(c)) h+='<span class="ct-line"><span class="ct-em">🌀</span>Есть портал</span>';
   if(c.port)     h+='<span class="ct-line"><span class="ct-em">⚓</span>Есть порт</span>';
-  if(c.type==='cursed') h+='<span class="ct-line"><span class="ct-em">💀</span>Проклятое место</span>';
+  if(c.type==='cursed') h+='<span class="ct-line"><span class="ct-em">💀</span>Проклятая Декада (с 18 июня 9986 г.)</span>';
   el.innerHTML=h; el.style.display='block';
   // позиционирование рядом с курсором, с отражением у краёв
   const w=el.offsetWidth, ht=el.offsetHeight, pad=14;
@@ -1471,6 +1482,7 @@ document.getElementById('infoModal').onclick=e=>{ if(e.target.id==='infoModal') 
 /* ---- модалка добавления города ---- */
 document.getElementById('cmAdd').onclick=cmConfirm;
 document.getElementById('cmCancel').onclick=cmClose;
+document.getElementById('cmDelete').onclick=cmDeleteCity;
 document.getElementById('cityModal').onclick=e=>{ if(e.target.id==='cityModal') cmClose(); };
 document.getElementById('cmName').addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();cmConfirm();} if(e.key==='Escape')cmClose(); });
 
@@ -1609,12 +1621,29 @@ function handleCalib(ip){
 }
 let pendingCity=null, editingIdx=-1, lastCityType='town';
 function openCityModal(){ document.getElementById('cityModal').classList.add('open'); setTimeout(()=>document.getElementById('cmName').focus(),40); }
+function refreshCountryList(){
+  const dl=document.getElementById('cmCountryList'); if(!dl) return;
+  const countries=[...new Set((CFG.cities||[]).map(c=>c.country).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
+  dl.innerHTML=countries.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">`).join('');
+}
+function nearestCountry(nx,ny){
+  let best=null, bestD=Infinity;
+  (CFG.cities||[]).forEach(c=>{
+    if(!c.country) return;
+    const d=Math.hypot((c.nx-nx)*CFG.imgW,(c.ny-ny)*CFG.imgH);
+    if(d<bestD){ bestD=d; best=c.country; }
+  });
+  return best||'';
+}
 function addCityAt(ip){
   editingIdx=-1; pendingCity={nx:ip.ix/CFG.imgW, ny:ip.iy/CFG.imgH};
   document.getElementById('cmTitle').textContent='Новый город';
   document.getElementById('cmName').value=''; document.getElementById('cmType').value=lastCityType;  // помним последний выбор
+  document.getElementById('cmCountry').value=nearestCountry(pendingCity.nx,pendingCity.ny);
   document.getElementById('cmPort').checked=false;
   document.getElementById('cmWrap').checked=false;
+  document.getElementById('cmDelete').style.display='none';
+  refreshCountryList();
   openCityModal();
 }
 function editCity(i){
@@ -1622,17 +1651,28 @@ function editCity(i){
   editingIdx=i; pendingCity=null;
   document.getElementById('cmTitle').textContent='Изменить город';
   document.getElementById('cmName').value=c.name||''; document.getElementById('cmType').value=c.type||'town';
+  document.getElementById('cmCountry').value=c.country||'';
   document.getElementById('cmPort').checked=!!c.port;
   document.getElementById('cmWrap').checked=!!c.wrap;
+  document.getElementById('cmDelete').style.display='block';
+  refreshCountryList();
   openCityModal();
+}
+function cmDeleteCity(){
+  if(editingIdx<0 || !CFG.cities[editingIdx]) { cmClose(); return; }
+  const c=CFG.cities[editingIdx];
+  if(!confirm('Удалить город «'+(c.name||'без названия')+'»?')) return;
+  CFG.cities.splice(editingIdx,1);
+  saveConfig(); refreshCityList(); refreshGateSelects(); draw(); cmClose();
 }
 function cmConfirm(){
   const name=document.getElementById('cmName').value.trim(), type=document.getElementById('cmType').value;
+  const country=document.getElementById('cmCountry').value.trim();
   const port=document.getElementById('cmPort').checked;
   const wrap=document.getElementById('cmWrap').checked;
   lastCityType=type;   // запоминаем выбранный тип на сессию
-  if(editingIdx>=0 && CFG.cities[editingIdx]){ CFG.cities[editingIdx].name=name; CFG.cities[editingIdx].type=type; CFG.cities[editingIdx].port=port; CFG.cities[editingIdx].wrap=wrap; }
-  else if(pendingCity){ CFG.cities.push({name, type, port, wrap, nx:pendingCity.nx, ny:pendingCity.ny}); }
+  if(editingIdx>=0 && CFG.cities[editingIdx]){ CFG.cities[editingIdx].name=name; CFG.cities[editingIdx].type=type; CFG.cities[editingIdx].country=country; CFG.cities[editingIdx].port=port; CFG.cities[editingIdx].wrap=wrap; }
+  else if(pendingCity){ CFG.cities.push({name, type, country, port, wrap, nx:pendingCity.nx, ny:pendingCity.ny}); }
   else { cmClose(); return; }
   saveConfig(); refreshCityList(); refreshGateSelects(); draw(); cmClose();
 }
@@ -1721,7 +1761,8 @@ function refreshCityList(){
   el.innerHTML='';
   CFG.cities.forEach((c,i)=>{
     const row=document.createElement('div'); row.className='cityrow';
-    row.innerHTML=`<span><span class="swatch" style="background:${cityColor(c.type)}"></span>${c.name||'<i style="opacity:.6">без названия</i>'}</span><span style="display:flex;gap:3px"><span class="ed" data-i="${i}" title="Изменить">✎</span><span class="x" data-i="${i}" title="Удалить">✕</span></span>`;
+    const countryTag=c.country?` <i style="opacity:.55">— ${c.country}</i>`:' <i style="opacity:.4;color:#c0392b">— нет страны</i>';
+    row.innerHTML=`<span><span class="swatch" style="background:${cityColor(c.type)}"></span>${c.name||'<i style="opacity:.6">без названия</i>'}${countryTag}</span><span style="display:flex;gap:3px"><span class="ed" data-i="${i}" title="Изменить">✎</span><span class="x" data-i="${i}" title="Удалить">✕</span></span>`;
     row.querySelector('.ed').onclick=()=>editCity(i);
     row.querySelector('.x').onclick=()=>{CFG.cities.splice(i,1);saveConfig();refreshCityList();refreshGateSelects();draw();};
     el.appendChild(row);
