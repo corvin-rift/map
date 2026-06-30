@@ -211,7 +211,7 @@ body.sidehidden .side{display:none;}
 #cityTip .ct-type{display:block;font-size:9.5px;color:rgba(var(--accent),1);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;opacity:.85;}
 #cityTip .ct-line{display:flex;align-items:center;gap:6px;font-size:11px;line-height:1.7;color:var(--text-light);}
 #cityTip .ct-line .ct-em{font-size:13px;line-height:1;}
-.cm-port{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;line-height:1.3;}
+.cm-port{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-light);cursor:pointer;line-height:1.3;}
 .cm-port input{width:16px;height:16px;flex:0 0 auto;accent-color:rgb(var(--accent));cursor:pointer;}
 
 /* результат Врат — компактно, как журнал маршрута */
@@ -389,6 +389,14 @@ body.sidehidden .side{display:none;}
 const EDITOR = location.hash.toLowerCase().includes('editor');
 if(EDITOR) document.body.classList.add('editor');
 
+// Версия публикации — увеличивай на 1 при каждом обновлении карты/config.json,
+// чтобы у игроков подгружались свежие файлы без Ctrl+Shift+R.
+const ASSET_VER = 2;
+function verUrl(u){
+  if(!u || u.startsWith('data:') || u.startsWith('blob:')) return u;
+  return u + (u.includes('?')?'&':'?') + 'v=' + ASSET_VER;
+}
+
 /* ---------- Конфиг по умолчанию (фракции 0..1 от размера картинки) ---------- */
 const DEFAULT_CONFIG = {
   mapSrc:"Map 4k.webp",
@@ -510,7 +518,7 @@ function loadConfig(){
 async function resolveConfig(){
   let base=structuredClone(DEFAULT_CONFIG), gotDisk=false, disk=null;
   try{
-    const r=await fetch('config.json',{cache:'no-store'});
+    const r=await fetch(verUrl('config.json'),{cache:'no-store'});
     if(r.ok){ disk=await r.json(); base=Object.assign(base, disk); gotDisk=true; }
   }catch(e){}
   // В редакторе localStorage = твоя рабочая копия (правки не теряются при перезагрузке).
@@ -547,7 +555,7 @@ function loadMap(src){
     if(src!==DEFAULT_CONFIG.mapSrc){ loadMap(DEFAULT_CONFIG.mapSrc); return; }
     document.getElementById('loading').innerHTML='<div style="max-width:320px;text-align:center">Не удалось загрузить карту.<br><small>Проверь, что <b>'+DEFAULT_CONFIG.mapSrc+'</b> лежит рядом с index.html</small></div>';
   };
-  img.src=src;
+  img.src=verUrl(src);
 }
 // «Отпечаток» карты — чтобы заметить, что подложили ДРУГОЙ файл
 function mapSignature(){
@@ -565,7 +573,7 @@ function ensureAnnotated(cb){
   imgAnnotated=new Image(); imgAnnotated.crossOrigin="anonymous";
   imgAnnotated.onload=()=>{ draw(); cb&&cb(); };
   imgAnnotated.onerror=()=>{ document.getElementById('topHint').textContent='⚠ Слой с отметками не найден ('+(CFG.mapAdmin||'')+').'; };
-  imgAnnotated.src=CFG.mapAdmin||"Map 4k admin.webp";
+  imgAnnotated.src=verUrl(CFG.mapAdmin||"Map 4k admin.webp");
 }
 const GRID_TARGET=880;   // мелкая сетка по умолчанию (≈2× от прежней) — детальнее берег/реки
 // один раз при загрузке поднимаем маску до целевой мелкости, не теряя нарисованного
