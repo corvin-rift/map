@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Терра — Карта путешествий</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair:wght@400;600;700;900&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ====== Палитра форума Разлом ====== */
+:root{
+  --bg:#110705;
+  --canvas:210,208,199;      /* пергамент */
+  --panel:32,40,40;          /* тёмная панель */
+  --accent:136,161,157;      /* шалфейный акцент */
+  --accent2:76,83,84;        /* тёмный акцент */
+  --text:#2d2d2d;
+  --text-light:#e7e2d6;
+  --link:#617975;
+  --sea:#3f7fb0;
+  --river:#4db1c8;
+  --road:#caa14a;
+  --gate:#b06be0;
+  --font-title:"Playfair",serif;
+  --font-body:"Montserrat","Verdana",sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;height:100%;font-family:var(--font-body);color:var(--text-light);
+  background:var(--bg) url("https://forumstatic.ru/files/001c/70/90/34243.jpg") center top fixed;
+  -webkit-font-smoothing:antialiased;overflow:hidden;}
+.app{display:flex;height:100vh;width:100vw;}
+
+/* ---- левая панель ---- */
+.side{width:320px;flex:0 0 320px;height:100%;overflow-y:auto;padding:14px;position:relative;
+  background:rgba(var(--panel),.94);border-right:1px solid rgba(var(--accent),.35);
+  backdrop-filter:blur(3px);}
+#sideClose{position:absolute;top:10px;right:10px;width:27px;height:27px;border:none;border-radius:8px;
+  background:rgba(var(--canvas),.10);color:var(--text-light);font-size:13px;cursor:pointer;line-height:1;
+  display:flex;align-items:center;justify-content:center;transition:.2s;z-index:3;}
+#sideClose:hover{background:rgba(var(--accent),1);color:#15201e;}
+body.sidehidden #sideClose{display:none;}
+.side h1{font-family:var(--font-title);font-weight:900;font-size:20px;letter-spacing:.5px;
+  text-transform:uppercase;text-align:center;margin:4px 0 2px;color:var(--text-light);}
+.side .sub{text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(var(--accent),1);margin-bottom:14px;}
+.badge{display:inline-block;background:rgba(var(--accent),1);color:#15201e;font-weight:700;
+  font-size:9px;padding:2px 8px;border-radius:20px;text-transform:uppercase;vertical-align:middle;margin-left:6px;}
+
+.card{background:rgba(var(--canvas),.10);border:1px solid rgba(var(--accent),.25);
+  border-radius:12px;padding:12px;margin-bottom:12px;}
+.card h2{font-family:var(--font-title);font-size:13px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1px;margin:0 0 10px;color:rgba(var(--accent),1);
+  display:flex;align-items:center;gap:7px;}
+.card h2 .ico{font-size:15px;}
+
+label.lbl{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.8px;
+  color:rgba(var(--accent),.9);margin:8px 0 3px;}
+select,input[type=text],input[type=number]{width:100%;padding:7px 10px;border-radius:8px;
+  border:1px solid rgba(var(--accent),.4);background:rgba(var(--canvas),.12);
+  color:var(--text-light);font-family:var(--font-body);font-size:12px;}
+select option{color:#222;}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;
+  padding:9px 12px;border:none;border-radius:22px;background:rgba(var(--accent),1);
+  color:#15201e;font-family:var(--font-title);font-weight:700;font-size:12px;
+  text-transform:uppercase;letter-spacing:.5px;cursor:pointer;transition:.25s;margin-top:8px;}
+.btn:hover{background:#fff;color:rgb(var(--accent));}
+.btn.ghost{background:rgba(var(--accent),.18);color:var(--text-light);}
+.btn.ghost:hover{background:rgba(var(--accent),.4);}
+.btn.sm{width:auto;padding:6px 12px;font-size:11px;margin:0;}
+.row{display:flex;gap:8px;}
+.row .btn{margin-top:8px;}
+
+/* способы передвижения как чипы */
+.modes{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+.mode-chip{font-size:11px;padding:5px 10px;border-radius:18px;cursor:pointer;
+  border:1px solid rgba(var(--accent),.4);background:rgba(var(--canvas),.08);
+  color:var(--text-light);transition:.2s;}
+.mode-chip.on{background:rgba(var(--accent),1);color:#15201e;border-color:transparent;font-weight:700;}
+
+/* журнал маршрута */
+.journey{font-size:12px;}
+.seg{display:flex;justify-content:space-between;gap:8px;padding:7px 0;
+  border-bottom:1px dashed rgba(var(--accent),.25);}
+.seg .from{color:var(--text-light);}
+.seg .km{color:rgba(var(--accent),1);font-weight:700;white-space:nowrap;}
+.seg .days{font-size:10px;color:rgba(var(--canvas),.7);}
+.total{margin-top:10px;padding-top:10px;border-top:1px solid rgba(var(--accent),.4);
+  font-family:var(--font-title);font-weight:700;font-size:15px;display:flex;justify-content:space-between;}
+.total b{color:rgba(var(--accent),1);}
+.muted{color:rgba(var(--canvas),.55);font-size:11px;font-style:italic;text-align:center;padding:12px 4px;}
+.warn{color:#e0a96b;font-size:11px;margin-top:6px;}
+
+/* список точек маршрута */
+.wplist{margin-bottom:8px;}
+.wp{display:flex;align-items:center;gap:7px;padding:6px 8px;margin-bottom:4px;border-radius:8px;
+  background:rgba(var(--canvas),.08);border:1px solid rgba(var(--accent),.25);font-size:12px;cursor:grab;}
+.wp.dragging{opacity:.4;}
+.wp .wpgrab{color:rgba(var(--accent),.7);cursor:grab;font-size:12px;}
+.wp .wpbadge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+  border-radius:50%;background:rgba(var(--accent),1);color:#15201e;font-weight:700;font-size:10px;flex:0 0 auto;}
+.wp .wpname{flex:1;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wp .wpx{cursor:pointer;color:#e07b7b;padding:0 3px;font-size:12px;}
+.wp .wpx:hover{color:#ff9a9a;}
+
+/* вкладки наверху панели */
+.tabs{display:flex;gap:4px;margin-bottom:12px;}
+.tab{flex:1;text-align:center;padding:8px;border-radius:10px;font-size:11px;cursor:pointer;
+  text-transform:uppercase;letter-spacing:.5px;background:rgba(var(--canvas),.08);
+  border:1px solid rgba(var(--accent),.25);transition:.2s;}
+.tab.on{background:rgba(var(--accent),1);color:#15201e;font-weight:700;}
+
+/* ---- холст карты ---- */
+.stage{flex:1;position:relative;overflow:hidden;background:#0c1416;}
+#map{position:absolute;inset:0;width:100%;height:100%;cursor:grab;display:block;touch-action:none;}
+#map.grabbing{cursor:grabbing;}
+#map.adding{cursor:crosshair;}
+
+.float{position:absolute;z-index:5;display:flex;gap:6px;}
+.float.tl{top:12px;left:12px;}
+.float.tr{top:12px;right:12px;flex-direction:column;align-items:flex-end;}
+.fbtn{background:rgba(var(--panel),.92);color:var(--text-light);border:1px solid rgba(var(--accent),.4);
+  border-radius:10px;padding:8px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;
+  font-family:var(--font-body);transition:.2s;}
+.fbtn:hover{background:rgba(var(--accent),1);color:#15201e;}
+.hint{background:rgba(17,7,5,.40);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+  color:var(--text-light);padding:7px 13px;border-radius:11px;border:1px solid rgba(255,255,255,.08);
+  font-size:11px;max-width:240px;text-align:right;line-height:1.65;}
+
+/* индикатор загрузки */
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:14px;color:var(--text-light);z-index:20;background:#0c1416;}
+.spin{width:42px;height:42px;border:4px solid rgba(var(--accent),.25);border-top-color:rgba(var(--accent),1);
+  border-radius:50%;animation:sp 1s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+/* редактор */
+.ed-only{display:none;}
+body.editor .ed-only{display:block;}
+.ed-tag{background:var(--gate);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;
+  border-radius:20px;text-transform:uppercase;margin-left:6px;}
+.swatch{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:middle;}
+.tools{display:flex;flex-wrap:wrap;gap:6px;}
+.tool{font-size:11px;padding:5px 9px;border-radius:8px;cursor:pointer;border:1px solid rgba(var(--accent),.4);
+  background:rgba(var(--canvas),.08);color:var(--text-light);}
+.tool.on{background:var(--gate);border-color:transparent;color:#fff;font-weight:700;}
+.citylist{max-height:160px;overflow:auto;font-size:11px;margin-top:6px;}
+.cityrow{display:flex;justify-content:space-between;align-items:center;padding:3px 0;
+  border-bottom:1px dashed rgba(var(--accent),.2);}
+.cityrow .x{cursor:pointer;color:#e07b7b;padding:0 4px;}
+.cityrow .ed{cursor:pointer;color:#7fb0c0;padding:0 4px;}
+.cityrow .ed:hover{color:#bfe3ef;}
+.scaleinfo{font-size:11px;color:rgba(var(--canvas),.8);margin-top:6px;}
+small.note{display:block;font-size:10px;color:rgba(var(--canvas),.55);margin-top:6px;line-height:1.4;}
+
+/* поиск */
+.searchwrap{position:relative;}
+#searchClear{position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;
+  color:rgba(var(--canvas),.6);font-size:14px;display:none;}
+#searchClear:hover{color:#e07b7b;}
+.searchres{margin-top:6px;}
+.searchres .r{padding:6px 9px;border-radius:8px;cursor:pointer;font-size:12px;
+  display:flex;justify-content:space-between;gap:8px;align-items:center;}
+.searchres .r:hover{background:rgba(var(--accent),.25);}
+.searchres .r small{color:rgba(var(--canvas),.55);font-size:10px;}
+.chk{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:11px;cursor:pointer;
+  color:rgba(var(--canvas),.85);}
+.chk input{width:auto;margin:0;}
+
+/* кнопка сворачивания панели */
+body.sidehidden .side{display:none;}
+#sideToggle{font-size:15px;}
+
+/* блок «Информация» */
+.float.bl{bottom:14px;left:14px;}
+#infoModal{position:absolute;inset:0;z-index:40;display:none;align-items:center;justify-content:center;
+  background:rgba(10,6,4,.55);backdrop-filter:blur(2px);}
+#infoModal.open{display:flex;}
+.info-panel{background:rgba(var(--panel),.98);border:1px solid rgba(var(--accent),.5);border-radius:14px;
+  max-width:600px;width:92%;max-height:86vh;overflow:auto;padding:20px 24px;
+  box-shadow:0 14px 50px rgba(0,0,0,.55);}
+.info-title{font-family:var(--font-title);font-weight:900;font-size:20px;text-transform:uppercase;
+  text-align:center;color:var(--text-light);letter-spacing:1px;margin:0 0 2px;}
+.info-sec{font-family:var(--font-title);font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:rgba(var(--accent),1);font-size:13px;margin:16px 0 5px;}
+.info-panel table{width:100%;border-collapse:collapse;font-size:12px;margin:2px 0 4px;}
+.info-panel th,.info-panel td{border:1px solid rgba(var(--accent),.22);padding:5px 9px;text-align:left;}
+.info-panel th{background:rgba(var(--accent),.16);color:rgba(var(--accent),1);font-weight:700;}
+.info-panel td.r{text-align:right;white-space:nowrap;color:var(--text-light);}
+.info-ul{font-size:12px;line-height:1.6;padding-left:18px;margin:4px 0;color:var(--text-light);}
+.info-ul li{margin-bottom:4px;}
+.info-note{font-size:12.5px;line-height:1.6;color:var(--text-light);margin:4px 0 2px;}
+.info-panel .legend{line-height:2.1;}
+.info-panel .legend svg{vertical-align:-4px;}
+
+/* модалка добавления города */
+#cityModal{position:absolute;inset:0;z-index:45;display:none;align-items:center;justify-content:center;
+  background:rgba(10,6,4,.5);backdrop-filter:blur(2px);}
+#cityModal.open{display:flex;}
+.cm-panel{background:rgba(var(--panel),.99);border:1px solid rgba(var(--accent),.5);border-radius:12px;
+  padding:18px;width:300px;max-width:90%;display:flex;flex-direction:column;gap:10px;
+  box-shadow:0 12px 40px rgba(0,0,0,.55);}
+.cm-title{font-family:var(--font-title);font-weight:700;font-size:15px;text-transform:uppercase;
+  color:var(--text-light);text-align:center;}
+.cm-btns{display:flex;gap:8px;}
+.cm-btns .btn{flex:1;margin:0;}
+#cityTip{position:fixed;z-index:60;pointer-events:none;display:none;min-width:90px;max-width:240px;
+  background:rgba(var(--panel),.98);border:1px solid rgba(var(--accent),.55);border-radius:9px;
+  padding:8px 11px;box-shadow:0 8px 26px rgba(0,0,0,.5);font-size:12.5px;color:var(--text);}
+#cityTip b{display:block;font-family:var(--font-title);font-weight:700;font-size:14px;color:var(--text-light);margin-bottom:2px;}
+#cityTip .ct-type{display:block;font-size:9.5px;color:rgba(var(--accent),1);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;opacity:.85;}
+#cityTip .ct-line{display:flex;align-items:center;gap:6px;font-size:11px;line-height:1.7;color:var(--text-light);}
+#cityTip .ct-line .ct-em{font-size:13px;line-height:1;}
+.cm-port{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;line-height:1.3;}
+.cm-port input{width:16px;height:16px;flex:0 0 auto;accent-color:rgb(var(--accent));cursor:pointer;}
+
+/* результат Врат — компактно, как журнал маршрута */
+#gateResult{font-size:12px;}
+#gateResult .total{font-size:13px;}
+#gateResult .seg .from{font-size:12px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ================= ЛЕВАЯ ПАНЕЛЬ ================= -->
+  <aside class="side">
+    <button id="sideClose" title="Свернуть панель">✕</button>
+    <h1>Сказания Разлома</h1>
+    <div class="sub">карта путешествий</div>
+
+    <div class="card">
+      <h2><span class="ico">🔎</span>Поиск</h2>
+      <div class="searchwrap">
+        <input type="text" id="searchInput" placeholder="Город или объект…" autocomplete="off">
+        <span id="searchClear">✕</span>
+      </div>
+      <div class="searchres" id="searchResults"></div>
+      <label class="chk"><input type="checkbox" id="labelToggle"> Показывать названия</label>
+    </div>
+
+    <!-- слои карты — только админ (юзерам пока всегда географический) -->
+    <div class="ed-only">
+      <label class="lbl" style="margin-top:0">Слой карты</label>
+      <div class="tabs" id="layerTabs">
+        <div class="tab on" data-layer="geo">Гео</div>
+        <div class="tab" data-layer="political" title="в разработке">Полит.</div>
+        <div class="tab" data-layer="admin">С отметками</div>
+      </div>
+    </div>
+
+    <div id="tab-route">
+      <div class="card">
+        <h2><span class="ico">🧭</span>Способ передвижения</h2>
+        <label class="lbl">Маршрут</label>
+        <select id="routeType">
+          <option value="auto" selected>⚡ Авто — самый быстрый</option>
+          <option value="land">🥾 Только по суше</option>
+          <option value="water">🌊 Только по воде</option>
+        </select>
+        <label class="lbl">Скорость пути</label>
+        <select id="persona">
+          <option value="simple">🚶 Простой путь — пешком, обоз, повозки</option>
+          <option value="fast" selected>🐎 Быстрый путь — верхом налегке</option>
+          <option value="courier">📯 Срочная депеша — сменные лошади</option>
+          <option value="portal">🌀 Через Врата (порталы)</option>
+        </select>
+        <div id="legPaceBox" style="display:none">
+          <label class="lbl">Темп на плечах (до/от Врат)</label>
+          <select id="legPace">
+            <option value="simple">🚶 Простой</option>
+            <option value="fast" selected>🐎 Быстрый</option>
+            <option value="courier">📯 Срочная депеша</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="ico">📍</span>Ваш путь</h2>
+        <small class="note">Кликайте по карте, чтобы ставить точки (А → остановки → Б). Клик рядом с городом — притянется. Точки можно перетаскивать на карте и менять их порядок в списке.</small>
+        <div class="wplist" id="wpList"></div>
+        <div class="journey" id="journey"><div class="muted">Маршрут пуст</div></div>
+        <div class="row">
+          <button class="btn ghost sm" id="undoPt" style="flex:1">↶ Убрать точку</button>
+          <button class="btn ghost sm" id="clearPt" style="flex:1">✕ Очистить</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- РЕДАКТОР (только #editor) ---- -->
+    <div class="ed-only">
+      <div class="card" style="border-color:var(--gate)">
+        <h2 style="color:var(--gate)"><span class="ico">⚙</span>Редактор<span class="ed-tag">только админ</span></h2>
+
+        <label class="lbl">Карта (файл)</label>
+        <input type="file" id="mapFile" accept="image/*">
+        <small class="note">Превью в этой сессии. Для публикации замени <b>map.webp</b> в папке.</small>
+
+        <label class="lbl">Калибровка масштаба</label>
+        <button class="btn ghost sm" id="calBtn" style="width:100%">Отметить 2 точки на линейке</button>
+        <div class="scaleinfo" id="scaleInfo"></div>
+
+        <label class="lbl">Инструмент</label>
+        <div class="tools" id="tools">
+          <div class="tool on" data-tool="pan">✋ Двигать</div>
+          <div class="tool" data-tool="city">📍 Город</div>
+          <div class="tool" data-tool="river">〜 Река</div>
+          <div class="tool" data-tool="sea">🖌 Море</div>
+          <div class="tool" data-tool="land">🖌 Суша</div>
+          <div class="tool" data-tool="fillSea">🪣 Залить морем</div>
+          <div class="tool" data-tool="fillLand">🪣 Залить сушей</div>
+          <div class="tool" data-tool="zoneAdd">🚂 Зона пара +</div>
+          <div class="tool" data-tool="zoneDel">🚂 Зона пара −</div>
+          <div class="tool" data-tool="blockAdd">⛰ Непроходимо +</div>
+          <div class="tool" data-tool="blockDel">⛰ Непроходимо −</div>
+        </div>
+        <small class="note" id="toolHint">Двигать: панорама карты.</small>
+        <label class="chk"><input type="checkbox" id="maskView"> Показать маску воды (синее=море, бирюзовое=река)</label>
+        <label class="chk"><input type="checkbox" id="zoneView"> Показать зону пара (фиолетовая — Сильвания/Креолия)</label>
+        <label class="chk"><input type="checkbox" id="blockView"> Показать непроходимое (красное — горы/льды, маршрут огибает)</label>
+
+        <div class="ed-only" id="brushBox" style="display:none">
+          <label class="lbl">Размер кисти: <span id="brushVal">40</span></label>
+          <input type="range" id="brush" min="1" max="140" value="40" style="width:100%">
+        </div>
+
+        <label class="lbl">Города</label>
+        <div class="citylist" id="cityList"></div>
+
+        <label class="lbl">Реки <span style="opacity:.6">(рисуй: инструмент 〜 Река, зажми и веди)</span></label>
+        <div class="citylist" id="riverList"></div>
+        <button class="btn ghost sm" id="clearRivers" style="width:100%;margin-top:6px">🗑 Удалить ВСЕ реки</button>
+
+        <div class="row">
+          <button class="btn ghost sm" id="exportBtn" style="flex:1">⬇ Экспорт</button>
+          <button class="btn ghost sm" id="importBtn" style="flex:1">⬆ Импорт</button>
+        </div>
+        <input type="file" id="importFile" accept=".json" style="display:none">
+        <button class="btn ghost sm" id="rebuildTerr" style="width:100%;margin-top:8px">↻ Пересоздать маску под текущую карту</button>
+        <button class="btn ghost sm" id="refineGrid" style="width:100%;margin-top:6px">🔬 Мельче сетку (×2)</button>
+        <button class="btn ghost sm" id="coarsenGrid" style="width:100%;margin-top:6px">🔍 Крупнее сетку (×2)</button>
+        <small class="note">Авто-маска по цвету = черновик. Поправь кистью «Море/Суша».</small>
+      </div>
+    </div>
+
+    <div class="muted" id="modeNote"></div>
+  </aside>
+
+  <!-- ================= ХОЛСТ ================= -->
+  <div class="stage">
+    <canvas id="map"></canvas>
+    <div class="float tl">
+      <button class="fbtn" id="sideToggle" title="Свернуть/развернуть панель">☰</button>
+      <button class="fbtn" id="zoomIn">＋</button>
+      <button class="fbtn" id="zoomOut">－</button>
+      <button class="fbtn" id="zoomReset">⟲ Сброс</button>
+    </div>
+    <div class="float tr">
+      <div class="hint" id="topHint">Колесо — зум · перетаскивание — двигать карту</div>
+    </div>
+    <div class="loading" id="loading"><div class="spin"></div><div>Загрузка карты…</div></div>
+    <div id="cityTip"></div>
+    <div class="float bl"><button class="fbtn" id="infoBtn">ⓘ Информация и скорости</button></div>
+    <div id="infoModal"><div class="info-panel" id="infoPanel"></div></div>
+    <div id="cityModal"><div class="cm-panel">
+      <div class="cm-title" id="cmTitle">Новый город</div>
+      <input type="text" id="cmName" placeholder="Название (можно оставить пустым)" autocomplete="off">
+      <select id="cmType">
+        <option value="capital">Столица (с порталом, оранжевый ромб)</option>
+        <option value="capnp">Столица без портала (оранжевый круг)</option>
+        <option value="city">Город с порталом (синий ромб)</option>
+        <option value="town" selected>Город (без портала, коричневый круг)</option>
+        <option value="cursed">Проклятый</option>
+      </select>
+      <label class="cm-port"><input type="checkbox" id="cmPort"> ⚓ Портовый город — есть выход к воде (река/море)</label>
+      <label class="cm-port"><input type="checkbox" id="cmWrap"> ↵ Название в две строки (на карте)</label>
+      <div class="cm-btns"><button class="btn sm" id="cmAdd">Добавить</button><button class="btn ghost sm" id="cmCancel">Отмена</button></div>
+    </div></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   ТЕРРА — карта путешествий.  Один файл, без сборки.
+   Данные (города, реки, масштаб, маска) — в localStorage + экспорт JSON.
+   Редактор включается секретной ссылкой:  index.html#editor
+   ========================================================================= */
+
+const EDITOR = location.hash.toLowerCase().includes('editor');
+if(EDITOR) document.body.classList.add('editor');
+
+/* ---------- Конфиг по умолчанию (фракции 0..1 от размера картинки) ---------- */
+const DEFAULT_CONFIG = {
+  mapSrc:"Map 4k.webp",
+  mapAdmin:"Map 4k admin.webp",
+  imgW:4096, imgH:3072,
+  kmPerWidth:12084,      // км по всей ширине карты (линейка ~1800км). Перекалибруется.
+  detour:1.15,           // коэффициент извилистости дорог
+  gridCols:880,
+  cities:[
+    // столицы (примерно — подвинь в редакторе)
+    {name:"Анор-Эннорат", type:"capital", nx:0.130, ny:0.700, country:"Вечный Дол"},
+    {name:"Нинквелонд",   type:"capital", nx:0.095, ny:0.500, country:"Зимний Дол"},
+    {name:"Тиларит",      type:"city",    nx:0.155, ny:0.560, country:"Зимний Дол (запад)"},
+    {name:"Ард-Мор",      type:"cursed",  nx:0.220, ny:0.660, country:"Веколесье (дерево-столица)", onRiver:true},
+    {name:"Орлина Вежа",  type:"capital", nx:0.300, ny:0.555, country:"Сарматия"},
+    {name:"Исборг",       type:"capital", nx:0.390, ny:0.520, country:"Фьордхольм"},
+    {name:"Северин",      type:"capital", nx:0.515, ny:0.470, country:"Сильвания"},
+    {name:"Шонгау",       type:"capital", nx:0.430, ny:0.620, country:"Айзен (столица Империи)"},
+    {name:"Лормонт",      type:"capital", nx:0.335, ny:0.690, country:"Франкия"},
+    {name:"Ватицин",      type:"capital", nx:0.455, ny:0.730, country:"Италика"},
+    {name:"Альедо",       type:"capital", nx:0.270, ny:0.840, country:"Гранада"},
+    {name:"Каслрок",      type:"capital", nx:0.560, ny:0.500, country:"Альбион"},
+    {name:"Вышеград",     type:"capital", nx:0.800, ny:0.560, country:"Быстрица"},
+    // проклятые города Декады
+    {name:"Форц",   type:"cursed", nx:0.405, ny:0.585, country:"Айзен"},
+    {name:"Хаген",  type:"cursed", nx:0.460, ny:0.610, country:"Айзен"},
+    {name:"Нилуза", type:"cursed", nx:0.310, ny:0.700, country:"Франкия"},
+    {name:"Бела",   type:"cursed", nx:0.315, ny:0.545, country:"Сарматия"},
+    {name:"Селиор", type:"cursed", nx:0.150, ny:0.760, country:"Вечный Дол"},
+    {name:"Виндхэм",type:"cursed", nx:0.580, ny:0.470, country:"Альбион"},
+    {name:"Гримсбю",type:"cursed", nx:0.420, ny:0.490, country:"Фьордхольм"},
+    {name:"Фергоза",type:"cursed", nx:0.230, ny:0.870, country:"Гранада"},
+    {name:"Креполи",type:"cursed", nx:0.470, ny:0.770, country:"Италика"}
+  ],
+  rivers:[
+    // примерная непрерывная река Тиларит -> Анор-Эннорат (запад), горы перекрывают визуально
+    {name:"Западная река", pts:[
+      {nx:0.155,ny:0.560},{nx:0.150,ny:0.600},{nx:0.140,ny:0.645},{nx:0.132,ny:0.680},{nx:0.130,ny:0.700},{nx:0.120,ny:0.740}
+    ]}
+  ],
+  terrain:null  // маска суша/море, генерится из картинки при первом запуске
+};
+
+/* ---------- Типы пути. Скорости — км/день, ДИАПАЗОН [мин, макс] ---------- */
+const TYPES = [
+  {id:"simple",  name:"Простой путь",   icon:"🚶", landLabel:"пешком/обозом", desc:"пешком, обоз, кареты, повозки",
+   land:[15,35],  sea:[50,120],  riverDown:[30,100], riverUp:[1,25],
+   steamTrain:[180,320], steamRiver:[70,140],  steamSea:[120,220]},
+  {id:"fast",    name:"Быстрый путь",   icon:"🐎", landLabel:"верхом",        desc:"всадник: без спешки → налегке",
+   land:[30,60],  sea:[120,250], riverDown:[50,100], riverUp:[10,25],
+   steamTrain:[320,550], steamRiver:[120,220], steamSea:[220,360]},
+  {id:"courier", name:"Срочная депеша", icon:"📯", landLabel:"курьером",      desc:"сменные лошади, быстрые суда",
+   land:[90,130], sea:[200,300], riverDown:[50,100], riverUp:[10,25],
+   steamTrain:[550,850], steamRiver:[180,300], steamSea:[320,500]}
+];
+const STEAM_DOWN=1.1, STEAM_UP=0.75;   // речные множители парохода
+function jt(){ return TYPES.find(t=>t.id===typeId)||TYPES[1]; }
+const mid=a=>(a[0]+a[1])/2;
+function modeRange(mode){
+  const T=jt(), s=a=>[Math.round(a[0]),Math.round(a[1])];
+  if(mode==='train')     return T.steamTrain;
+  if(mode==='steamSea')  return T.steamSea;
+  if(mode==='steamDown') return s([T.steamRiver[0]*STEAM_DOWN, T.steamRiver[1]*STEAM_DOWN]);
+  if(mode==='steamUp')   return s([T.steamRiver[0]*STEAM_UP,   T.steamRiver[1]*STEAM_UP]);
+  return mode==='sea'?T.sea : mode==='down'?T.riverDown : mode==='up'?T.riverUp : T.land;
+}
+const DETOUR_LAND=1.2, DETOUR_RIVER=1.12, DETOUR_SEA=1.06;
+// способы движения для отрисовки/подписей
+const MODE_META={
+  land:{label:()=>jt().landLabel, icon:()=>jt().icon, color:"#caa14a"},
+  down:{label:()=>"вниз по реке", icon:()=>"🛶", color:"#4db1c8"},
+  up:  {label:()=>"вверх по реке",icon:()=>"🛶", color:"#3a9ab0"},
+  sea: {label:()=>"морем",        icon:()=>"⚓", color:"#3f7fb0"},
+  portal:   {label:()=>"Врата",           icon:()=>"🌀", color:"#caa14a"},
+  train:    {label:()=>"паровозом",       icon:()=>"🚂", color:"#e0345e"},
+  steamSea: {label:()=>"пароходом (море)",icon:()=>"🚢", color:"#8e44ad"},
+  steamDown:{label:()=>"пароходом ↓",     icon:()=>"🚢", color:"#8e44ad"},
+  steamUp:  {label:()=>"пароходом ↑",     icon:()=>"🚢", color:"#7d3a9c"}
+};
+
+/* ============================ СОСТОЯНИЕ ============================ */
+let CFG = loadConfig();
+let img = new Image();
+let imgReady = false;
+let view = {zoom:1, x:0, y:0, minZoom:1};   // x,y — смещение в экранных px; zoom — масштаб картинки
+let userTouched=false;                       // пока false — авто-вписываем при ресайзах
+let terrainGrid=null, gridCols=0, gridRows=0; // 0 море,1 суша,2 река
+let flowX=null, flowY=null;                   // вектор течения реки (к устью) на клетку
+let riverDist=null;                           // расстояние по реке до моря (клетки); меньше = ближе к устью
+let zoneGrid=null;                            // паровой слой Сильвании/Креолии (0 нет,1 зона)
+let blockGrid=null;                           // непроходимая местность (0 нет,1 горы/льды) — маршрут огибает
+let waypoints=[];     // [{ix,iy,city?}]  координаты в px картинки
+let routePath=null;   // массив точек пути (px картинки) для отрисовки
+let typeId="fast", routeType="auto", legTypeId="fast";
+let labelsOn=true;          // DEV: true чтобы видеть расстановку. Для публикации сними галку.
+let highlight=null, pulseRAF=null;  // подсветка найденного города
+let draggingWp=null;                // индекс перетаскиваемой точки маршрута
+let showMask=false;                 // показывать маску воды (редактор)
+let showZone=false;                 // показывать паровую зону (редактор)
+let showBlock=false;                // показывать непроходимое (редактор)
+let showAnnotated=false;            // показывать слой с отметками (админ-подложка)
+let imgAnnotated=null;              // картинка слоя с отметками
+let editor={tool:"pan", brush:40, calibrating:null, dragCity:null, drawingRiver:null, cursor:null};
+
+const cv=document.getElementById('map');
+const ctx=cv.getContext('2d');
+
+/* ============================ КОНФИГ I/O ============================ */
+function loadConfig(){
+  try{
+    const s=localStorage.getItem('riftMapConfig');
+    if(s){const c=JSON.parse(s); return Object.assign({}, structuredClone(DEFAULT_CONFIG), c);}
+  }catch(e){}
+  return structuredClone(DEFAULT_CONFIG);
+}
+// Приоритет данных:
+//  • обычный юзер → config.json из папки (опубликованные данные)
+//  • редактор (#editor) → localStorage (твоя рабочая копия), иначе config.json
+async function resolveConfig(){
+  let base=structuredClone(DEFAULT_CONFIG), gotDisk=false, disk=null;
+  try{
+    const r=await fetch('config.json',{cache:'no-store'});
+    if(r.ok){ disk=await r.json(); base=Object.assign(base, disk); gotDisk=true; }
+  }catch(e){}
+  // В редакторе localStorage = твоя рабочая копия (правки не теряются при перезагрузке).
+  if(EDITOR || !gotDisk){
+    try{ const s=localStorage.getItem('riftMapConfig'); if(s) base=Object.assign(base, JSON.parse(s)); }catch(e){}
+  }
+  // ПУТИ К ФАЙЛАМ КАРТ — всегда с диска/дефолта, не из localStorage (он мог устареть)
+  base.mapSrc   = (disk&&disk.mapSrc)   || DEFAULT_CONFIG.mapSrc;
+  base.mapAdmin = (disk&&disk.mapAdmin) || DEFAULT_CONFIG.mapAdmin;
+  return base;
+}
+function saveConfig(){
+  try{
+    // картинку-файл (dataURL) в localStorage не пихаем — слишком тяжело
+    const c=structuredClone(CFG);
+    if(c.mapSrc && c.mapSrc.startsWith('data:')) c.mapSrc=DEFAULT_CONFIG.mapSrc;
+    localStorage.setItem('riftMapConfig', JSON.stringify(c));
+  }catch(e){ console.warn('save failed', e); }
+}
+
+/* ============================ ЗАГРУЗКА КАРТЫ ============================ */
+function loadMap(src){
+  imgReady=false;
+  document.getElementById('loading').style.display='flex';
+  img=new Image();
+  img.crossOrigin="anonymous";
+  img.onload=()=>{
+    CFG.imgW=img.naturalWidth; CFG.imgH=img.naturalHeight;
+    imgReady=true;
+    initAfterLoad();   // setTimeout-ожидание layout (работает и в фоновой вкладке)
+  };
+  img.onerror=()=>{
+    // если путь устарел (напр. из localStorage) — пробуем дефолтный файл
+    if(src!==DEFAULT_CONFIG.mapSrc){ loadMap(DEFAULT_CONFIG.mapSrc); return; }
+    document.getElementById('loading').innerHTML='<div style="max-width:320px;text-align:center">Не удалось загрузить карту.<br><small>Проверь, что <b>'+DEFAULT_CONFIG.mapSrc+'</b> лежит рядом с index.html</small></div>';
+  };
+  img.src=src;
+}
+// «Отпечаток» карты — чтобы заметить, что подложили ДРУГОЙ файл
+function mapSignature(){
+  try{
+    const c=document.createElement('canvas'); c.width=32; c.height=24;
+    const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(img,0,0,32,24);
+    const d=x.getImageData(0,0,32,24).data; let s=0;
+    for(let i=0;i<d.length;i+=4) s=(s+d[i]*3+d[i+1]*5+d[i+2]*7)%1000000007;
+    return s;
+  }catch(e){ return null; }
+}
+// слой с отметками (админ-подложка) — грузим лениво при включении галки
+function ensureAnnotated(cb){
+  if(imgAnnotated && imgAnnotated.complete && imgAnnotated.naturalWidth){ cb&&cb(); return; }
+  imgAnnotated=new Image(); imgAnnotated.crossOrigin="anonymous";
+  imgAnnotated.onload=()=>{ draw(); cb&&cb(); };
+  imgAnnotated.onerror=()=>{ document.getElementById('topHint').textContent='⚠ Слой с отметками не найден ('+(CFG.mapAdmin||'')+').'; };
+  imgAnnotated.src=CFG.mapAdmin||"Map 4k admin.webp";
+}
+const GRID_TARGET=880;   // мелкая сетка по умолчанию (≈2× от прежней) — детальнее берег/реки
+// один раз при загрузке поднимаем маску до целевой мелкости, не теряя нарисованного
+function autoRefineGrid(){
+  if(CFG.autoRefined) return;
+  if(!terrainGrid){ CFG.autoRefined=true; return; }
+  if(gridCols>=GRID_TARGET){ CFG.autoRefined=true; saveConfig(); return; }
+  const oc=gridCols, or=gridRows, nc=GRID_TARGET, nr=Math.round(nc*CFG.imgH/CFG.imgW);
+  const up=g=>{ const n=new Uint8Array(nc*nr); for(let y=0;y<nr;y++){const oy=Math.floor(y*or/nr); for(let x=0;x<nc;x++){const ox=Math.floor(x*oc/nc); n[y*nc+x]=g[oy*oc+ox];}} return n; };
+  terrainGrid=up(terrainGrid); if(zoneGrid) zoneGrid=up(zoneGrid); if(blockGrid) blockGrid=up(blockGrid);
+  gridCols=nc; gridRows=nr; CFG.gridCols=nc; CFG.autoRefined=true;
+  saveTerrain(); if(zoneGrid) saveZone(); if(blockGrid) saveBlock(); saveConfig();
+}
+function initAfterLoad(tries){
+  tries=tries||0;
+  resize();
+  if((!cv.width||!cv.height) && tries<80){ setTimeout(()=>initAfterLoad(tries+1),50); return; }
+  // карта изменилась (другой файл) -> маска пересоздаётся САМА
+  const sig=mapSignature();
+  if(sig!=null && CFG.mapSig!=null && sig!==CFG.mapSig){ CFG.terrain=null; terrainGrid=null;
+    document.getElementById('topHint').textContent='✓ Замечена новая карта — маска воды пересоздана автоматически.'; }
+  if(sig!=null) CFG.mapSig=sig;
+  if(!terrainGrid) buildTerrain();
+  autoRefineGrid();          // мелкая сетка по умолчанию (один раз, без потери маски)
+  userTouched=false; fitView();
+  document.getElementById('loading').style.display='none';
+  draw(); refreshAll();
+}
+
+/* ============================ КООРДИНАТЫ ============================ */
+// экран -> картинка
+function s2i(sx,sy){ return { ix:(sx-view.x)/view.zoom, iy:(sy-view.y)/view.zoom }; }
+// картинка -> экран
+function i2s(ix,iy){ return { sx:ix*view.zoom+view.x, sy:iy*view.zoom+view.y }; }
+function kmPerPx(){ return CFG.kmPerWidth / CFG.imgW; }
+
+function resize(){
+  const r=cv.parentElement.getBoundingClientRect();
+  cv.width=r.width; cv.height=r.height;
+}
+function fitView(){
+  if(!cv.width||!cv.height) return;
+  const z=Math.min(cv.width/CFG.imgW, cv.height/CFG.imgH);
+  view.minZoom=z; view.zoom=z;
+  view.x=(cv.width-CFG.imgW*z)/2;
+  view.y=(cv.height-CFG.imgH*z)/2;
+}
+function clampView(){
+  if(view.zoom<view.minZoom*0.95) view.zoom=view.minZoom*0.95;
+  if(view.zoom>view.minZoom*14) view.zoom=view.minZoom*14;
+}
+
+/* ============================ ОТРИСОВКА ============================ */
+function draw(){
+  if(!imgReady) return;
+  if(!userTouched) fitView();   // держим вписывание, пока юзер не взял управление
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle="#0c1416"; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.imageSmoothingQuality="high";
+  const baseImg = (EDITOR && showAnnotated && imgAnnotated && imgAnnotated.complete && imgAnnotated.naturalWidth) ? imgAnnotated : img;
+  ctx.drawImage(baseImg, view.x, view.y, CFG.imgW*view.zoom, CFG.imgH*view.zoom);
+
+  // маска суша/море: при просмотре или активной кисти
+  if(terrainGrid && (showMask || (EDITOR && /^(sea|land|fillSea|fillLand|river)$/.test(editor.tool)))){
+    drawTerrainOverlay();
+  }
+  if(zoneGrid && (showZone || (EDITOR && /^(zoneAdd|zoneDel)$/.test(editor.tool)))){
+    drawZoneOverlay();
+  }
+  if(blockGrid && (showBlock || (EDITOR && /^(blockAdd|blockDel)$/.test(editor.tool)))){
+    drawBlockOverlay();
+  }
+  drawRivers();
+  drawRoute();
+  drawCities();
+  if(highlight) drawHighlight();
+  // курсор кисти/заливки (видно, куда жмёшь)
+  if(EDITOR && editor.cursor){
+    const cu=editor.cursor;
+    if(/^(sea|land|zoneAdd|zoneDel|river|blockAdd|blockDel)$/.test(editor.tool)){
+      const col=editor.tool==='sea'?'40,110,235':(editor.tool==='land'?'120,200,90':(editor.tool==='river'?'40,200,255':(/^block/.test(editor.tool)?'220,40,60':'150,70,210')));
+      ctx.beginPath(); ctx.arc(cu.sx,cu.sy,editor.brush,0,7);
+      ctx.fillStyle=`rgba(${col},.20)`; ctx.fill();
+      // контрастное кольцо: тёмное + белое, видно на любом фоне
+      ctx.lineWidth=4; ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.stroke();
+      ctx.lineWidth=2; ctx.strokeStyle='#fff'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(cu.sx,cu.sy,2,0,7); ctx.fillStyle='#fff'; ctx.fill();
+    } else if(editor.tool==='fillSea'||editor.tool==='fillLand'){
+      ctx.beginPath(); ctx.arc(cu.sx,cu.sy,9,0,7);
+      ctx.fillStyle=editor.tool==='fillSea'?'rgba(40,110,235,.7)':'rgba(120,200,90,.6)'; ctx.fill();
+      ctx.lineWidth=3; ctx.strokeStyle='#fff'; ctx.stroke();
+    } else if(editor.tool==='river'){
+      ctx.beginPath(); ctx.arc(cu.sx,cu.sy,6,0,7); ctx.fillStyle='#40c8ff'; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle='#fff'; ctx.stroke();
+    }
+  }
+}
+function drawHighlight(){
+  const c=highlight.city, s=i2s(c.nx*CFG.imgW, c.ny*CFG.imgH);
+  const t=performance.now()/1000, rr=13+5*Math.sin(t*4.5);
+  ctx.beginPath(); ctx.arc(s.sx,s.sy,rr,0,7);
+  ctx.strokeStyle="rgba(255,212,90,.95)"; ctx.lineWidth=3; ctx.stroke();
+  ctx.beginPath(); ctx.arc(s.sx,s.sy,rr+6,0,7);
+  ctx.strokeStyle="rgba(255,212,90,.35)"; ctx.lineWidth=2; ctx.stroke();
+}
+function startPulse(){
+  if(pulseRAF) cancelAnimationFrame(pulseRAF);
+  const t0=performance.now();
+  const loop=()=>{
+    if(!highlight){ pulseRAF=null; draw(); return; }
+    draw();
+    if(performance.now()-t0<5000) pulseRAF=requestAnimationFrame(loop);  // пульс 5с, потом стоп
+    else { pulseRAF=null; draw(); }
+  };
+  pulseRAF=requestAnimationFrame(loop);
+}
+function focusCity(c){
+  userTouched=true;
+  const ix=c.nx*CFG.imgW, iy=c.ny*CFG.imgH;
+  if(view.zoom<view.minZoom*2.2) view.zoom=view.minZoom*3;
+  clampView();
+  view.x=cv.width/2-ix*view.zoom; view.y=cv.height/2-iy*view.zoom;
+  highlight={city:c}; startPulse();
+}
+
+function drawTerrainOverlay(){
+  const cw=CFG.imgW/gridCols, ch=CFG.imgH/gridRows;
+  for(let y=0;y<gridRows;y++)for(let x=0;x<gridCols;x++){
+    const t=terrainGrid[y*gridCols+x];
+    if(t===0){ctx.fillStyle="rgba(30,90,230,.48)";}       // море — насыщенно-синяя заливка
+    else if(t===2){ctx.fillStyle="rgba(120,240,255,.9)";} // река — ярко-бирюзовая
+    else continue;
+    const p=i2s(x*cw,y*ch);
+    ctx.fillRect(p.sx,p.sy,cw*view.zoom+1,ch*view.zoom+1);
+  }
+}
+function drawZoneOverlay(){
+  const cw=CFG.imgW/gridCols, ch=CFG.imgH/gridRows;
+  ctx.fillStyle="rgba(150,70,210,.42)";   // паровая зона — фиолетовая
+  for(let y=0;y<gridRows;y++)for(let x=0;x<gridCols;x++){
+    if(zoneGrid[y*gridCols+x]!==1)continue;
+    const p=i2s(x*cw,y*ch);
+    ctx.fillRect(p.sx,p.sy,cw*view.zoom+1,ch*view.zoom+1);
+  }
+}
+function drawBlockOverlay(){
+  const cw=CFG.imgW/gridCols, ch=CFG.imgH/gridRows;
+  ctx.fillStyle="rgba(220,40,60,.45)";   // непроходимое — красное
+  for(let y=0;y<gridRows;y++)for(let x=0;x<gridCols;x++){
+    if(blockGrid[y*gridCols+x]!==1)continue;
+    const p=i2s(x*cw,y*ch);
+    ctx.fillRect(p.sx,p.sy,cw*view.zoom+1,ch*view.zoom+1);
+  }
+}
+
+function drawRivers(){
+  // Сохранённые реки НЕ рисуем отдельной линией — они живут в маске (клетки=2),
+  // иначе получался «второй слой». Рисуем только реку, которую сейчас ведёшь.
+  if(EDITOR && editor.drawingRiver){
+    ctx.lineCap="round"; ctx.lineJoin="round";
+    ctx.beginPath();
+    editor.drawingRiver.pts.forEach((p,i)=>{ const s=i2s(p.nx*CFG.imgW,p.ny*CFG.imgH); i?ctx.lineTo(s.sx,s.sy):ctx.moveTo(s.sx,s.sy); });
+    // ширина линии-превью = выбранная кисть (rv.wf — доля ширины карты), мин. 3px
+    const wpx=Math.max(3,(editor.drawingRiver.wf||0)*CFG.imgW*view.zoom*2);
+    ctx.strokeStyle="rgba(40,200,255,.9)"; ctx.lineWidth=wpx; ctx.stroke();
+  }
+}
+
+// разбить путь на куски одного способа (mode хранится на точке-приёмнике)
+function routeRuns(path){
+  const runs=[]; let cur=null;
+  for(let i=1;i<path.length;i++){ const m=path[i].mode||'land';
+    if(!cur||cur.mode!==m){ cur={mode:m, pts:[path[i-1], path[i]]}; runs.push(cur); }
+    else cur.pts.push(path[i]); }
+  return runs;
+}
+// Рамер–Дуглас–Пейкер: убирает «ступеньки», оставляя реальные изгибы
+function rdpSimplify(pts, eps){
+  if(pts.length<3) return pts.slice();
+  const a=pts[0], b=pts[pts.length-1];
+  const dx=b.ix-a.ix, dy=b.iy-a.iy, L=Math.hypot(dx,dy)||1;
+  let dmax=0, idx=0;
+  for(let i=1;i<pts.length-1;i++){ const d=Math.abs((pts[i].ix-a.ix)*dy-(pts[i].iy-a.iy)*dx)/L;
+    if(d>dmax){dmax=d; idx=i;} }
+  if(dmax>eps){ const l=rdpSimplify(pts.slice(0,idx+1),eps), r=rdpSimplify(pts.slice(idx),eps);
+    return l.slice(0,-1).concat(r); }
+  return [a,b];
+}
+// гладкая линия по точкам (квадратичные кривые через середины рёбер)
+function strokeSmooth(P, straight){
+  if(P.length<2) return;
+  ctx.beginPath(); ctx.moveTo(P[0].sx,P[0].sy);
+  if(straight || P.length===2){ for(let i=1;i<P.length;i++) ctx.lineTo(P[i].sx,P[i].sy); }
+  else { for(let i=1;i<P.length-1;i++){ const mx=(P[i].sx+P[i+1].sx)/2, my=(P[i].sy+P[i+1].sy)/2;
+      ctx.quadraticCurveTo(P[i].sx,P[i].sy,mx,my); } ctx.lineTo(P[P.length-1].sx,P[P.length-1].sy); }
+  ctx.stroke();
+}
+function drawRoute(){
+  if(routePath&&routePath.length>1){
+    ctx.lineCap="round"; ctx.lineJoin="round";
+    // линия идёт по центрам клеток сетки -> «лесенка». Разбиваем по способу,
+    // упрощаем каждый кусок (RDP) и рисуем сглаженной кривой.
+    const runs=routeRuns(routePath);
+    for(const run of runs){
+      const sp=rdpSimplify(run.pts, (CFG.imgW/gridCols)*2.0);   // допуск ~2 клетки
+      const isPortal=run.mode==='portal';
+      ctx.setLineDash(isPortal?[8,6]:[]); ctx.lineWidth=isPortal?3:4;
+      ctx.strokeStyle=(MODE_META[run.mode]||MODE_META.land).color;
+      strokeSmooth(sp.map(p=>i2s(p.ix,p.iy)), isPortal);
+    }
+    ctx.setLineDash([]);
+  }
+  // точки маршрута
+  waypoints.forEach((w,i)=>{
+    const s=i2s(w.ix,w.iy);
+    ctx.beginPath(); ctx.arc(s.sx,s.sy,8,0,7);
+    ctx.fillStyle=i===0?"#5fbf6a":i===waypoints.length-1?"#e07b7b":"#e7c45f";
+    ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle="#15201e"; ctx.stroke();
+    ctx.fillStyle="#15201e"; ctx.font="bold 10px Montserrat"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(i===0?"A":i===waypoints.length-1?"Б":String(i), s.sx, s.sy);
+  });
+}
+
+function cityColor(t){ return t==='cursed'?"#9a9a9a":t==='town'?"#7a5230":(t==='capital'||t==='capnp')?"#e0892e":"#3a72b8"; }
+// разбить имя на две строки по пробелу, ближайшему к середине ("Роща Вечности"->["Роща","Вечности"])
+function splitTwoLines(s){
+  const sp=[]; for(let i=0;i<s.length;i++) if(s[i]===' ') sp.push(i);
+  if(!sp.length) return [s];
+  const mid=s.length/2; let best=sp[0];
+  for(const i of sp) if(Math.abs(i-mid)<Math.abs(best-mid)) best=i;
+  return [s.slice(0,best), s.slice(best+1)];
+}
+function drawCities(){
+  CFG.cities.forEach(c=>{
+    const s=i2s(c.nx*CFG.imgW, c.ny*CFG.imgH);
+    if(s.sx<-40||s.sx>cv.width+40||s.sy<-40||s.sy>cv.height+40) return;
+    ctx.save();
+    if(c.type==='cursed'||c.type==='town'||c.type==='capnp'){ // круг
+      if(c.type==='town'){          // город — коричневое кольцо + светлый центр (как метка карты)
+        ctx.beginPath(); ctx.arc(s.sx,s.sy,5.5,0,7); ctx.fillStyle="#241608"; ctx.fill();   // тёмная окантовка
+        ctx.beginPath(); ctx.arc(s.sx,s.sy,4.6,0,7); ctx.fillStyle="#7a5230"; ctx.fill();   // коричневое кольцо
+        ctx.beginPath(); ctx.arc(s.sx,s.sy,2.2,0,7); ctx.fillStyle="#efe7d6"; ctx.fill();   // светлый центр
+      }else if(c.type==='capnp'){   // столица БЕЗ портала — оранжевое кольцо + светлый центр (как столица, но круг)
+        ctx.beginPath(); ctx.arc(s.sx,s.sy,6.6,0,7); ctx.fillStyle="#1b2430"; ctx.fill();   // тёмная окантовка
+        ctx.beginPath(); ctx.arc(s.sx,s.sy,5.7,0,7); ctx.fillStyle="#e0892e"; ctx.fill();   // оранжевое кольцо
+        ctx.beginPath(); ctx.arc(s.sx,s.sy,2.7,0,7); ctx.fillStyle="#e9eef3"; ctx.fill();   // светлый центр
+      }else{                        // проклятый — серый круг
+        ctx.beginPath(); ctx.arc(s.sx,s.sy,5,0,7); ctx.fillStyle=cityColor('cursed'); ctx.fill();
+        ctx.lineWidth=1.6; ctx.strokeStyle="#2b2825"; ctx.stroke();
+      }
+    }else{ // ромб: толстая цветная рамка + маленькая светлая середина (как метки карты)
+      const cap=c.type==='capital', sz=cap?6:5, inner=cap?2.6:2.4;
+      ctx.translate(s.sx,s.sy); ctx.rotate(Math.PI/4);
+      ctx.fillStyle="#1b2430"; ctx.fillRect(-sz-1,-sz-1,(sz+1)*2,(sz+1)*2);   // тёмная окантовка
+      ctx.fillStyle=cityColor(c.type); ctx.fillRect(-sz,-sz,sz*2,sz*2);        // цветная рамка
+      ctx.fillStyle="#e9eef3"; ctx.fillRect(-inner,-inner,inner*2,inner*2);    // светлая середина
+    }
+    ctx.restore();
+    if(labelsOn && c.name){
+      ctx.font=((c.type==='capital'||c.type==='capnp')?"700 12px ":"500 11px ")+"Playfair";
+      ctx.textAlign="left"; ctx.textBaseline="middle";
+      const lines = c.wrap ? splitTwoLines(c.name) : [c.name];
+      const lh=13, y0=s.sy-(lines.length-1)*lh/2;
+      lines.forEach((ln,k)=>{ const ly=y0+k*lh;
+        ctx.lineWidth=3; ctx.strokeStyle="rgba(17,7,5,.85)"; ctx.strokeText(ln, s.sx+9, ly);
+        ctx.fillStyle="#fff8e0"; ctx.fillText(ln, s.sx+9, ly);
+      });
+    }
+  });
+}
+
+/* ============================ МАСКА СУША/МОРЕ ============================ */
+function buildTerrain(){
+  gridCols=CFG.gridCols; gridRows=Math.round(gridCols*CFG.imgH/CFG.imgW);
+  const off=document.createElement('canvas'); off.width=gridCols; off.height=gridRows;
+  const octx=off.getContext('2d',{willReadFrequently:true});
+  let data=null;
+  try{
+    octx.drawImage(img,0,0,gridCols,gridRows);
+    data=octx.getImageData(0,0,gridCols,gridRows).data;
+  }catch(e){
+    // tainted canvas (карта по URL без CORS) — заполняем сушей, редактор поправит
+    terrainGrid=new Uint8Array(gridCols*gridRows).fill(1);
+    rasterRivers();
+    document.getElementById('topHint').textContent='⚠ Маска суша/море недоступна для карты по URL. Загрузи карту файлом в редакторе.';
+    return;
+  }
+  terrainGrid=classifyWater(gridCols,gridRows,data);
+  rasterRivers();
+  loadConfigTerrainOrSave();
+  loadZone();
+  loadBlock();
+}
+function loadZone(){
+  const N=gridCols*gridRows;
+  zoneGrid=(CFG.zone && CFG.zone.length===N) ? Uint8Array.from(CFG.zone,c=>+c) : new Uint8Array(N);
+}
+function saveZone(){ if(zoneGrid){ CFG.zone=Array.from(zoneGrid).join(''); saveConfig(); } }
+function loadBlock(){
+  const N=gridCols*gridRows;
+  blockGrid=(CFG.block && CFG.block.length===N) ? Uint8Array.from(CFG.block,c=>+c) : new Uint8Array(N);
+}
+function saveBlock(){ if(blockGrid){ CFG.block=Array.from(blockGrid).join(''); saveConfig(); } }
+// Авто-маска воды из пикселей карты (тот же алгоритм, что и при ручной генерации).
+// Насыщенно-синее/бирюзовое = море; снег отсекается по насыщенности;
+// тусклый океан добирается заливкой от краёв (снег в заливку не пускаем).
+function classifyWater(W,H,data){
+  const Np=W*H;
+  const sat=i=>{const r=data[i*4],g=data[i*4+1],b=data[i*4+2];return Math.max(r,g,b)-Math.min(r,g,b);};
+  const bri=i=>(data[i*4]+data[i*4+1]+data[i*4+2])/3;
+  let mask=new Uint8Array(Np);
+  for(let i=0;i<Np;i++){const r=data[i*4],g=data[i*4+1],b=data[i*4+2];
+    mask[i]=(sat(i)>44 && b>=g-2 && b>r+15)?0:1;}
+  const cand=new Uint8Array(Np);
+  for(let i=0;i<Np;i++){const r=data[i*4],g=data[i*4+1],b=data[i*4+2];
+    const wet=(b>=g-12 && b>=r-8 && b>88), snow=(bri(i)>126 && sat(i)<46);
+    cand[i]=(wet&&!snow)?1:0;}
+  const oc=new Uint8Array(Np),st=[],M=Math.round(W*0.02);
+  const seed=(x,y)=>{const i=y*W+x;if(cand[i]&&!oc[i]){oc[i]=1;st.push(i);}};
+  for(let x=M;x<W-M;x++){seed(x,M);seed(x,H-1-M);}
+  for(let y=M;y<H-M;y++){seed(M,y);seed(W-1-M,y);}
+  while(st.length){const c=st.pop(),x=c%W,y=(c/W)|0;for(const[dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<0||nx>=W||ny<0||ny>=H)continue;const ni=ny*W+nx;if(cand[ni]&&!oc[ni]){oc[ni]=1;st.push(ni);}}}
+  for(let i=0;i<Np;i++) if(oc[i]) mask[i]=0;
+  const minBlob=Math.max(6,Math.round(Np/3630));  // пропорц. разрешению (~20 при 440)
+  const vis=new Uint8Array(Np);
+  for(let i=0;i<Np;i++){if(mask[i]===0&&!vis[i]){const comp=[i];vis[i]=1;let qi=0;while(qi<comp.length){const c=comp[qi++],x=c%W,y=(c/W)|0;for(const[dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<0||nx>=W||ny<0||ny>=H)continue;const ni=ny*W+nx;if(mask[ni]===0&&!vis[ni]){vis[ni]=1;comp.push(ni);}}}if(comp.length<minBlob)for(const c of comp)mask[c]=1;}}
+  const sm=mask.slice();
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){let s=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(dx||dy)s+=mask[(y+dy)*W+(x+dx)];}const i=y*W+x;if(s<=1)sm[i]=0;else if(s>=7)sm[i]=1;}
+  return sm;
+}
+function loadConfigTerrainOrSave(){
+  if(CFG.terrain && CFG.terrain.length===gridCols*gridRows){
+    terrainGrid=Uint8Array.from(CFG.terrain, c=>+c);
+  }else{
+    CFG.terrain=Array.from(terrainGrid).join(''); saveConfig();
+  }
+  applyRivers(false);   // маска авторитетна; из линий строим только течение
+}
+// сколько морских клеток рядом с точкой сетки (для поиска устья)
+function seaScore(gxp,gyp){let c=0;const x0=Math.round(gxp),y0=Math.round(gyp);
+  for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const x=x0+dx,y=y0+dy;
+    if(x>=0&&x<gridCols&&y>=0&&y<gridRows&&terrainGrid[y*gridCols+x]===0)c++;}return c;}
+// Глобальное «расстояние по реке до моря» (в клетках). Меньше = ближе к устью.
+// Источники — клетки реки у моря; затем BFS по реке. Изолированные реки (без выхода
+// к морю) ориентируем от клетки, ближайшей к побережью (max seaScore). Это даёт
+// СОГЛАСОВАННОЕ направление вниз/вверх по всей связной реке, без скачков на изгибах.
+function buildRiverDist(){
+  const N=gridCols*gridRows; riverDist=new Float32Array(N).fill(Infinity);
+  if(!terrainGrid) return;
+  const nb=[1,-1,gridCols,-gridCols,gridCols+1,gridCols-1,-gridCols+1,-gridCols-1];
+  const ok=(c,ni)=>{ if(ni<0||ni>=N)return false; const cx=c%gridCols,nx=ni%gridCols; return Math.abs(nx-cx)<=1; };
+  const q=[]; let head=0;
+  for(let y=0;y<gridRows;y++)for(let x=0;x<gridCols;x++){ const i=y*gridCols+x; if(terrainGrid[i]!==2)continue;
+    let sea=false;
+    if(x>0&&terrainGrid[i-1]===0)sea=true; else if(x<gridCols-1&&terrainGrid[i+1]===0)sea=true;
+    else if(y>0&&terrainGrid[i-gridCols]===0)sea=true; else if(y<gridRows-1&&terrainGrid[i+gridCols]===0)sea=true;
+    if(sea){ riverDist[i]=0; q.push(i); } }
+  while(head<q.length){ const c=q[head++]; for(const d of nb){ const ni=c+d;
+    if(ok(c,ni)&&terrainGrid[ni]===2&&riverDist[ni]===Infinity){ riverDist[ni]=riverDist[c]+1; q.push(ni); } } }
+  // изолированные компоненты — псевдо-устье = клетка с max seaScore
+  for(let i=0;i<N;i++){ if(terrainGrid[i]!==2||riverDist[i]!==Infinity)continue;
+    const comp=[]; const st=[i]; riverDist[i]=-1;
+    while(st.length){ const c=st.pop(); comp.push(c); for(const d of nb){ const ni=c+d;
+      if(ok(c,ni)&&terrainGrid[ni]===2&&riverDist[ni]===Infinity){ riverDist[ni]=-1; st.push(ni); } } }
+    let src=comp[0],best=-1; for(const c of comp){ const sc=seaScore(c%gridCols,(c/gridCols)|0); if(sc>best){best=sc;src=c;} }
+    for(const c of comp) riverDist[c]=Infinity;
+    riverDist[src]=0; const q2=[src]; let h2=0;
+    while(h2<q2.length){ const c=q2[h2++]; for(const d of nb){ const ni=c+d;
+      if(ok(c,ni)&&terrainGrid[ni]===2&&riverDist[ni]===Infinity){ riverDist[ni]=riverDist[c]+1; q2.push(ni); } } }
+  }
+}
+// направление шага по реке: >0 = вниз (к морю), <0 = вверх. Согласовано глобально.
+function riverDir(a,b){ const da=riverDist[a],db=riverDist[b];
+  if(!isFinite(da)||!isFinite(db)) return 0; return da-db; }
+// строим течение (всегда) и, по флагу, отмечаем клетки реки в маске
+function applyRivers(setTerrain){
+  if(!terrainGrid)return;
+  flowX=new Float32Array(gridCols*gridRows); flowY=new Float32Array(gridCols*gridRows);
+  CFG.rivers.forEach(r=>{
+    if(r.pts.length<2)return;
+    let pts=r.pts.map(p=>({x:p.nx*gridCols,y:p.ny*gridRows}));
+    const rad=riverRadCells(r);   // ширина реки в клетках текущей сетки
+    // ориентируем исток -> устье (устье = конец ближе к морю)
+    if(seaScore(pts[0].x,pts[0].y) > seaScore(pts[pts.length-1].x,pts[pts.length-1].y)) pts.reverse();
+    for(let i=0;i<pts.length-1;i++){
+      const a=pts[i],b=pts[i+1]; let vx=b.x-a.x,vy=b.y-a.y; const L=Math.hypot(vx,vy)||1; vx/=L; vy/=L;
+      const steps=Math.ceil(L)+1;
+      for(let s=0;s<=steps;s++){
+        const cx=a.x+(b.x-a.x)*s/steps, cy=a.y+(b.y-a.y)*s/steps;
+        const x=Math.round(cx), y=Math.round(cy);
+        if(x<0||x>=gridCols||y<0||y>=gridRows)continue;
+        flowX[y*gridCols+x]=vx; flowY[y*gridCols+x]=vy;       // течение — по осевой
+        if(setTerrain) stampDisk(cx,cy,rad,2,null);            // вода — на всю ширину кисти
+      }
+    }
+  });
+}
+function rasterRivers(){ applyRivers(true); }
+
+/* ============================ A* МАРШРУТИЗАЦИЯ ============================ */
+// Многомодальный A* по ВРЕМЕНИ (дни). Сам выбирает суша/река(вниз-вверх)/море.
+// type: 'auto' | 'land' | 'water'
+function planRoute(ax,ay,bx,by,portA,portB){
+  if(!terrainGrid) return null;
+  const T=jt(), type=routeType;
+  // для прокладки пути используем СРЕДНЮЮ скорость диапазона
+  const P={land:mid(T.land), riverDown:mid(T.riverDown), riverUp:mid(T.riverUp), sea:mid(T.sea)};
+  const allowLand = type!=='water';
+  const allowBoat = type!=='land';
+  const seaSpeed  = (type!=='land' && P.sea>0) ? P.sea : 0;
+  const N=gridCols*gridRows;
+  if(!riverDist || riverDist.length!==N) buildRiverDist();   // глобальное направление течения
+  const cellKmX=(CFG.imgW/gridCols)*kmPerPx();
+  const fx=flowX||new Float32Array(N), fy=flowY||new Float32Array(N);
+  const blk = (blockGrid && blockGrid.length===N) ? blockGrid : new Uint8Array(N);  // непроходимое
+
+  const STR=mid(T.steamTrain), SSV=mid(T.steamSea), SRb=mid(T.steamRiver);
+  const SRD=SRb*STEAM_DOWN, SRU=SRb*STEAM_UP;                 // речной пароход вниз/вверх
+  const cellOK=(t,idx)=>{ if(idx!=null && blk[idx]===1) return false; if(t===0) return seaSpeed>0; if(t===2) return true; return allowLand; };
+  // скорость шага из ti в tj (направление dx,dy; jdx — индекс клетки-приёмника)
+  const stepSpeed=(ti,tj,dx,dy,idx,jdx)=>{
+    if(blk[jdx]===1) return 0;                                // в непроходимую клетку не входим
+    const z = zoneGrid && zoneGrid[jdx]===1;                  // в паровой зоне?
+    if(tj===0||ti===0){ if(seaSpeed<=0) return 0; return z?SSV:seaSpeed; } // море -> пароход в зоне
+    if(ti===2&&tj===2){                                       // вдоль реки
+      if(allowBoat){ const fd=riverDir(idx,jdx); if(z) return fd>=0?SRD:SRU; return fd>=0?P.riverDown:P.riverUp; }
+      return allowLand?(z?STR:P.land):0;
+    }
+    if(!allowLand) return 0;
+    return z?STR:P.land;                                      // суша -> паровоз в зоне
+  };
+  const gx=v=>Math.max(0,Math.min(gridCols-1,Math.round(v*gridCols/CFG.imgW)));
+  const gy=v=>Math.max(0,Math.min(gridRows-1,Math.round(v*gridRows/CFG.imgH)));
+  const snap=(x,y)=>{ if(cellOK(terrainGrid[y*gridCols+x], y*gridCols+x))return[x,y];
+    for(let rad=1;rad<30;rad++)for(let dy=-rad;dy<=rad;dy++)for(let dx=-rad;dx<=rad;dx++){
+      const nx=x+dx,ny=y+dy,ni=ny*gridCols+nx; if(nx>=0&&nx<gridCols&&ny>=0&&ny<gridRows&&cellOK(terrainGrid[ni], ni))return[nx,ny];}
+    return[x,y];};
+  // портовый город: высаживаемся к ближайшей воде (река/море), даже если точка смещена на сушу
+  const isWater=(t,idx)=>(blk[idx]!==1)&&((t===2)||(t===0&&seaSpeed>0));
+  const waterSnap=(x,y)=>{ if(isWater(terrainGrid[y*gridCols+x], y*gridCols+x))return[x,y];
+    for(let rad=1;rad<60;rad++)for(let dy=-rad;dy<=rad;dy++)for(let dx=-rad;dx<=rad;dx++){
+      const nx=x+dx,ny=y+dy,ni=ny*gridCols+nx; if(nx>=0&&nx<gridCols&&ny>=0&&ny<gridRows&&isWater(terrainGrid[ni], ni))return[nx,ny];}
+    return null;};
+  let sx=gx(ax),sy=gy(ay),ex=gx(bx),ey=gy(by);
+  if(portA&&allowBoat){ const w=waterSnap(sx,sy); if(w)[sx,sy]=w; else [sx,sy]=snap(sx,sy); } else [sx,sy]=snap(sx,sy);
+  if(portB&&allowBoat){ const w=waterSnap(ex,ey); if(w)[ex,ey]=w; else [ex,ey]=snap(ex,ey); } else [ex,ey]=snap(ex,ey);
+  const start=sy*gridCols+sx, goal=ey*gridCols+ex;
+  const maxV=Math.max(P.land,P.riverDown,seaSpeed||1,STR,SSV,SRD);
+  const g=new Float32Array(N).fill(Infinity), f=new Float32Array(N).fill(Infinity), came=new Int32Array(N).fill(-1);
+  const closed=new Uint8Array(N), open=new MinHeap();
+  const hday=(x,y)=>Math.hypot(x-ex,y-ey)*cellKmX/maxV;
+  g[start]=0; f[start]=hday(sx,sy); open.push(start,f[start]);
+  const dirs=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.41421],[1,-1,1.41421],[-1,1,1.41421],[-1,-1,1.41421]];
+  let guard=0;
+  while(open.size){
+    const cur=open.pop(); if(closed[cur])continue; closed[cur]=1;
+    if(cur===goal) break;
+    if(++guard>N*4) break;
+    const cx=cur%gridCols, cy=(cur/gridCols)|0, ti=terrainGrid[cur];
+    for(const[dx,dy,w] of dirs){
+      const nx=cx+dx,ny=cy+dy; if(nx<0||nx>=gridCols||ny<0||ny>=gridRows)continue;
+      const ni=ny*gridCols+nx; if(closed[ni])continue;
+      const sp=stepSpeed(ti,terrainGrid[ni],dx,dy,cur,ni); if(sp<=0)continue;
+      const ng=g[cur]+(w*cellKmX)/sp;                          // дни
+      if(ng<g[ni]){ came[ni]=cur; g[ni]=ng; f[ni]=ng+hday(nx,ny); open.push(ni,f[ni]); }
+    }
+  }
+  if(goal!==start && came[goal]===-1) return null;
+  // восстановление + разбивка на сегменты по способам
+  const cells=[]; let c=goal; while(c!==-1){cells.push(c);c=came[c];} cells.reverse();
+  if(cells.length<2) return null;
+  const cw=CFG.imgW/gridCols, ch=CFG.imgH/gridRows;
+  // 1-й проход: способ каждого шага
+  const step=[];
+  for(let i=1;i<cells.length;i++){
+    const a=cells[i-1], b=cells[i];
+    const ax2=a%gridCols, ay2=(a/gridCols)|0, bx2=b%gridCols, by2=(b/gridCols)|0;
+    const dx=bx2-ax2, dy=by2-ay2, w=Math.hypot(dx,dy), ti2=terrainGrid[a], tj2=terrainGrid[b];
+    const z = !!(zoneGrid && zoneGrid[b]===1);
+    let mode,sp,det;
+    if(tj2===0||ti2===0){ mode=z?'steamSea':'sea'; sp=z?SSV:(seaSpeed||1); det=DETOUR_SEA; }
+    else if(ti2===2&&tj2===2&&allowBoat){ const fd=riverDir(a,b);
+      if(z){mode=fd>=0?'steamDown':'steamUp';sp=fd>=0?SRD:SRU;} else {mode=fd>=0?'down':'up';sp=fd>=0?P.riverDown:P.riverUp;} det=DETOUR_RIVER; }
+    else { mode=z?'train':'land'; sp=z?STR:P.land; det=DETOUR_LAND; }
+    step.push({bx2,by2,w,z,mode,sp,det});
+  }
+  const RIVER=m=>m==='down'||m==='up'||m==='steamDown'||m==='steamUp';
+  // 1) направление ЦЕЛОГО речного участка — по нетто-смещению к морю (riverDist),
+  //    а не по каждой клетке. Иначе на широкой/петляющей реке вниз/вверх скачет.
+  for(let i=0;i<step.length;){
+    if(!RIVER(step[i].mode)){ i++; continue; }
+    let j=i; while(j<step.length && RIVER(step[j].mode)) j++;       // участок step[i..j-1], клетки cells[i..j]
+    const d0=riverDist[cells[i]], d1=riverDist[cells[j]];
+    const down = (isFinite(d0)&&isFinite(d1)) ? (d1<=d0) : true;     // к морю?
+    for(let k=i;k<j;k++){ const s=step[k];
+      if(s.z){ s.mode=down?'steamDown':'steamUp'; s.sp=down?SRD:SRU; }
+      else   { s.mode=down?'down':'up';           s.sp=down?P.riverDown:P.riverUp; } }
+    i=j;
+  }
+  // 2) короткие речные участки (брод/мост на сухопутном пути) — это НЕ сплав, переводим в сушу
+  const MIN_RIVER_CELLS=6;
+  for(let i=0;i<step.length;){
+    if(!RIVER(step[i].mode)){ i++; continue; }
+    let j=i; while(j<step.length && RIVER(step[j].mode)) j++;
+    if(j-i < MIN_RIVER_CELLS){ for(let k=i;k<j;k++){ const s=step[k]; s.mode=s.z?'train':'land'; s.sp=s.z?STR:P.land; s.det=DETOUR_LAND; } }
+    i=j;
+  }
+  // 2-й проход: расстояние по УПРОЩЁННОЙ (прямой) линии, а не по «лесенке» сетки.
+  // Ступеньки сетки длиннее прямой → раньше завышали км/время. Группируем по способу,
+  // RDP-упрощаем, длину меряем по прямым отрезкам. Detour учитывает реальную извилистость.
+  const raw=[{ix:(cells[0]%gridCols)*cw+cw/2, iy:((cells[0]/gridCols|0))*ch+ch/2, mode:step.length?step[0].mode:'land'}];
+  for(const s of step) raw.push({ix:s.bx2*cw+cw/2, iy:s.by2*ch+ch/2, mode:s.mode});
+  const eps=cw*1.8, kmpp=kmPerPx();
+  const detOf=m=>(m==='sea'||m==='steamSea')?DETOUR_SEA:(RIVER(m)?DETOUR_RIVER:DETOUR_LAND);
+  const speedOf=m=>({land:P.land,train:STR,sea:seaSpeed||1,steamSea:SSV,down:P.riverDown,up:P.riverUp,steamDown:SRD,steamUp:SRU}[m]||P.land);
+  const pts=[raw[0]]; const runs=[]; let totDays=0, totKm=0;
+  for(const grp of routeRuns(raw)){
+    const simp=rdpSimplify(grp.pts, eps);
+    let len=0; for(let i=1;i<simp.length;i++) len+=Math.hypot(simp[i].ix-simp[i-1].ix, simp[i].iy-simp[i-1].iy);
+    const km=len*kmpp*detOf(grp.mode), days=km/(speedOf(grp.mode)||1);
+    totKm+=km; totDays+=days; runs.push({mode:grp.mode, km, days});
+    for(let i=1;i<simp.length;i++) pts.push({ix:simp[i].ix, iy:simp[i].iy, mode:grp.mode});
+  }
+  // у портового города точка может быть смещена на сушу — дотягиваем линию до самой метки города
+  if(portA && (Math.abs(pts[0].ix-ax)>cw||Math.abs(pts[0].iy-ay)>ch)) pts.unshift({ix:ax,iy:ay,mode:pts[0].mode});
+  if(portB){ const L=pts[pts.length-1]; if(Math.abs(L.ix-bx)>cw||Math.abs(L.iy-by)>ch) pts.push({ix:bx,iy:by,mode:L.mode}); }
+  return {pts, runs:mergeRuns(runs), km:totKm, days:totDays};
+}
+// сливаем крошечные куски (<0.4 дня), чтобы не было «лапши» из чередований
+function mergeRuns(runs){
+  const out=[];
+  for(const r of runs){
+    if(out.length && (r.days<0.4 || out[out.length-1].mode===r.mode)){
+      out[out.length-1].km+=r.km; out[out.length-1].days+=r.days;
+    } else out.push({...r});
+  }
+  return out;
+}
+// мини-куча
+class MinHeap{
+  constructor(){this.k=[];this.p=[];this.size=0;}
+  push(key,prio){this.k.push(key);this.p.push(prio);this.size++;let i=this.size-1;
+    while(i>0){const par=(i-1)>>1; if(this.p[par]<=this.p[i])break; this._sw(i,par); i=par;}}
+  pop(){const top=this.k[0];this.size--;
+    if(this.size>0){this.k[0]=this.k[this.size];this.p[0]=this.p[this.size];}
+    this.k.length=this.size;this.p.length=this.size;let i=0;
+    while(true){let l=2*i+1,r=2*i+2,m=i;
+      if(l<this.size&&this.p[l]<this.p[m])m=l; if(r<this.size&&this.p[r]<this.p[m])m=r;
+      if(m===i)break;this._sw(i,m);i=m;}
+    return top;}
+  _sw(a,b){[this.k[a],this.k[b]]=[this.k[b],this.k[a]];[this.p[a],this.p[b]]=[this.p[b],this.p[a]];}
+}
+
+/* ============================ ПОСТРОЕНИЕ МАРШРУТА ============================ */
+function computeRoute(){
+  routePath=null;
+  renderWaypoints();
+  const J=document.getElementById('journey');
+  if(waypoints.length<2){ J.innerHTML='<div class="muted">Поставьте минимум 2 точки</div>'; draw(); return; }
+  if(typeId==='portal'){ computePortalRoute(J); return; }
+  let allPts=[], allRuns=[], totKm=0, failed=false;
+  for(let i=0;i<waypoints.length-1;i++){
+    const a=waypoints[i], b=waypoints[i+1];
+    const res=planRoute(a.ix,a.iy,b.ix,b.iy, !!(a.city&&a.city.port), !!(b.city&&b.city.port));
+    if(!res){ failed=true; continue; }
+    if(i===0) allPts=res.pts.slice(); else allPts=allPts.concat(res.pts);
+    totKm+=res.km;
+    res.runs.forEach(r=>{ const last=allRuns[allRuns.length-1];
+      if(last&&last.mode===r.mode){last.km+=r.km;} else allRuns.push({mode:r.mode,km:r.km}); });
+  }
+  routePath=allPts.length?allPts:null;
+  let html='', totMin=0, totMax=0;
+  if(allRuns.length){
+    allRuns.forEach(r=>{ const m=MODE_META[r.mode]||MODE_META.land, rng=modeRange(r.mode);
+      const dMin=r.km/rng[1], dMax=r.km/rng[0]; totMin+=dMin; totMax+=dMax;
+      html+=`<div class="seg"><span class="from">${m.icon()} ${fmtRange(dMin,dMax)} ${m.label()}</span>`+
+            `<span class="km">${Math.round(r.km).toLocaleString('ru')} км</span></div>`; });
+    html+=`<div class="total"><span>Итого</span><b>${fmtRange(totMin,totMax)}</b></div>`;
+    html+=`<div class="seg" style="border:none"><span class="from">${jt().icon} ${jt().name}</span>`+
+          `<span class="km">${Math.round(totKm).toLocaleString('ru')} км</span></div>`;
+  } else html='<div class="muted">Маршрут не найден</div>';
+  if(failed) html+=`<div class="warn">⚠ Часть пути не построилась для типа «${routeType==='water'?'только вода':routeType==='land'?'только суша':'авто'}». Попробуй «Авто».</div>`;
+  J.innerHTML=html; draw();
+}
+// маршрут через Врата: премиум + эконом, с плечами и переходом между порталов
+function computePortalRoute(J){
+  const savedTP=typeId; typeId=legTypeId;   // плечи И их отображение (modeRange/legDays) считаем выбранным темпом
+  const runsHtml=(res)=>{ if(!res||!res.runs)return''; let h='';
+    res.runs.forEach(rn=>{const m=MODE_META[rn.mode]||MODE_META.land, rng=modeRange(rn.mode), dMin=rn.km/rng[1], dMax=rn.km/rng[0];
+      h+=`<div class="seg"><span class="from">　${m.icon()} ${fmtRange(dMin,dMax)} ${m.label()}</span><span class="km">${Math.round(rn.km).toLocaleString('ru')} км</span></div>`;}); return h; };
+  let html='', allPts=[], premH=0, ecoH=0, anyAccess=false;
+  for(let i=0;i<waypoints.length-1;i++){
+    const wa=waypoints[i], wb=waypoints[i+1];
+    const A=wa.city||{nx:wa.ix/CFG.imgW, ny:wa.iy/CFG.imgH};
+    const B=wb.city||{nx:wb.ix/CFG.imgW, ny:wb.iy/CFG.imgH};
+    const nameA=wa.city?(wa.city.name||'Город'):(i===0?'A':'т.'+i);
+    const nameB=wb.city?(wb.city.name||'Город'):(i+1===waypoints.length-1?'Б':'т.'+(i+1));
+    const g=computeGate(A,B);
+    if(g.legA){ anyAccess=true; html+=`<div class="seg"><span class="from"><b>${nameA} → к Вратам (${g.ga.name||'портал'})</b></span></div>`+runsHtml(g.legA);
+      const d=legDays(g.legA); premH+=d*24; ecoH+=d*24; allPts=allPts.concat(g.legA.pts); }
+    html+=`<div class="seg"><span class="from">🌀 Врата: ${g.ga.name||'портал'} → ${g.gb.name||'портал'}</span><span class="km">${g.gkm.toLocaleString('ru')} км</span></div>`;
+    html+=`<div class="seg"><span class="from">　премиум (прямой)</span><span class="km">${fmtHours(g.premium)}</span></div>`;
+    html+=`<div class="seg"><span class="from">　эконом (пересадки)</span><span class="km">${fmtHours(g.econom)}</span></div>`;
+    premH+=g.premium; ecoH+=g.econom;
+    allPts.push({ix:g.ga.nx*CFG.imgW, iy:g.ga.ny*CFG.imgH, mode:'portal'});
+    allPts.push({ix:g.gb.nx*CFG.imgW, iy:g.gb.ny*CFG.imgH, mode:'portal'});
+    if(g.legB){ anyAccess=true; html+=`<div class="seg"><span class="from"><b>от Врат (${g.gb.name||'портал'}) → ${nameB}</b></span></div>`+runsHtml(g.legB);
+      const d=legDays(g.legB); premH+=d*24; ecoH+=d*24; allPts=allPts.concat(g.legB.pts); }
+  }
+  const lpName=(TYPES.find(t=>t.id===legTypeId)||TYPES[1]).name;
+  let head=`<div class="warn" style="margin-bottom:4px">🌀 Через Врата — два варианта: премиум и эконом.${anyAccess?` Плечи до/от портала — темпом «${lpName}».`:''}</div>`;
+  html=head+html;
+  html+=`<div class="total"><span>Итого премиум</span><b>${fmtHours(premH)}</b></div>`;
+  html+=`<div class="total" style="font-size:13px;margin-top:4px"><span>Итого эконом</span><b>${fmtHours(ecoH)}</b></div>`;
+  routePath=allPts.length?allPts:null;
+  typeId=savedTP;                            // вернуть исходный тип пути
+  J.innerHTML=html; draw();
+}
+function renderWaypoints(){
+  const el=document.getElementById('wpList'); if(!el) return;
+  if(!waypoints.length){ el.innerHTML=''; return; }
+  const lbl=i=>i===0?'A':(i===waypoints.length-1?'Б':String(i));
+  el.innerHTML=waypoints.map((w,i)=>{
+    const name=w.city?(w.city.name||'Город'):`Точка ${lbl(i)}`;
+    return `<div class="wp" draggable="true" data-i="${i}"><span class="wpgrab">⠿</span>`+
+           `<span class="wpbadge">${lbl(i)}</span><span class="wpname">${name}</span>`+
+           `<span class="wpx" data-i="${i}" title="Удалить точку">✕</span></div>`;
+  }).join('');
+  el.querySelectorAll('.wpx').forEach(x=>x.onclick=e=>{ e.stopPropagation();
+    waypoints.splice(+x.dataset.i,1); computeRoute(); });
+  let from=null;
+  el.querySelectorAll('.wp').forEach(row=>{
+    row.addEventListener('dragstart',()=>{ from=+row.dataset.i; row.classList.add('dragging'); });
+    row.addEventListener('dragend',()=>row.classList.remove('dragging'));
+    row.addEventListener('dragover',e=>e.preventDefault());
+    row.addEventListener('drop',e=>{ e.preventDefault(); const to=+row.dataset.i;
+      if(from!=null && from!==to){ const [m]=waypoints.splice(from,1); waypoints.splice(to,0,m); computeRoute(); } from=null; });
+  });
+}
+function dayUnit(d){
+  if(d<1) return [Math.round(d*24),'ч'];
+  if(d<30) return [Math.round(d),'дн.'];
+  if(d<365) return [+(d/30).toFixed(1),'мес.'];
+  return [+(d/365).toFixed(1),'г.'];
+}
+function fmtRange(a,b){
+  const [va,ua]=dayUnit(a), [vb,ub]=dayUnit(b);
+  const s=v=>String(v).replace('.',',');
+  if(ua===ub) return va===vb ? `${s(va)} ${ua}` : `${s(va)}–${s(vb)} ${ua}`;
+  return `${s(va)} ${ua} – ${s(vb)} ${ub}`;
+}
+function fmtDays(d){
+  if(d<1) return Math.round(d*24)+" ч";
+  if(d<2) return d.toFixed(1).replace('.',',')+" дня";
+  if(d<30) return Math.round(d)+" дн.";
+  const m=d/30; return m<12? m.toFixed(1).replace('.',',')+" мес." : (d/365).toFixed(1).replace('.',',')+" г.";
+}
+
+/* ============================ ВРАТА ТИТАНОВ ============================ */
+function gateTime(km){
+  // аналог авиа: премиум (прямой портал) — оргвремя ~3ч + быстрый портал;
+  // эконом (с пересадками) — внутри Атрии ~полсуток, дальше растёт с расстоянием.
+  const premium = 3 + km/4000;            // часы: оргвремя + лёгкая зависимость
+  const econom  = 10 + km/1200;           // часы: пересадки/очереди
+  return {premium, econom};
+}
+function plural(n,f1,f2,f5){ n=Math.abs(n)%100; const n1=n%10;
+  if(n>10&&n<20) return f5; if(n1>1&&n1<5) return f2; if(n1===1) return f1; return f5; }
+function fmtHours(h){
+  h=Math.max(0,Math.round(h));                      // в целых часах
+  if(h<24) return h+" "+plural(h,'час','часа','часов');
+  const d=Math.floor(h/24), hh=h-d*24;
+  let s=d+" "+plural(d,'сутки','суток','суток');
+  if(hh>0) s+=" "+hh+" "+plural(hh,'час','часа','часов');
+  return s;
+}
+function kmBetween(a,b){ return Math.hypot((a.nx-b.nx)*CFG.imgW,(a.ny-b.ny)*CFG.imgH)*kmPerPx(); }
+// город в паровой зоне (Сильвания/Креолия) -> Врат там НЕТ
+function cityInZone(c){ if(!zoneGrid)return false; const x=Math.round(c.nx*gridCols),y=Math.round(c.ny*gridRows); return zoneGrid[y*gridCols+x]===1; }
+// Врата есть только у городов С ПОРТАЛОМ (столица или город-портал) и не в паровой зоне
+function hasGate(c){ return (c.type==='capital'||c.type==='city') && !cityInZone(c); }
+function nearestGateCity(c){ let best=Infinity,gc=null; CFG.cities.forEach(o=>{ if(o!==c && hasGate(o)){ const d=kmBetween(c,o); if(d<best){best=d;gc=o;} }}); return gc?{city:gc,km:best}:null; }
+// Расчёт перемещения через Врата для пары точек a,b ({nx,ny,type?}). Плечи до/от портала — реальный маршрут.
+function computeGate(a,b){
+  const aNo=!hasGate(a), bNo=!hasGate(b);
+  let ga=a, gb=b;
+  if(aNo){ const n=nearestGateCity(a); if(n) ga=n.city; }
+  if(bNo){ const n=nearestGateCity(b); if(n) gb=n.city; }
+  const gkm=Math.round(kmBetween(ga,gb)), t=gateTime(gkm);
+  const savedRT=routeType, savedT=typeId; routeType='auto'; typeId=legTypeId;   // плечи считаем выбранным темпом
+  const legA = (ga!==a) ? planRoute(a.nx*CFG.imgW,a.ny*CFG.imgH, ga.nx*CFG.imgW,ga.ny*CFG.imgH, !!a.port, !!ga.port) : null;
+  const legB = (gb!==b) ? planRoute(gb.nx*CFG.imgW,gb.ny*CFG.imgH, b.nx*CFG.imgW,b.ny*CFG.imgH, !!gb.port, !!b.port) : null;
+  routeType=savedRT; typeId=savedT;
+  return {aNo,bNo,ga,gb,gkm,premium:t.premium,econom:t.econom,legA,legB};
+}
+function legDays(res){ if(!res||!res.runs)return 0; let d=0; res.runs.forEach(rn=>{const rng=modeRange(rn.mode); d+=rn.km/((rng[0]+rng[1])/2);}); return d; }
+
+/* ============================ UI: события ============================ */
+// зум колесом к курсору
+cv.addEventListener('wheel',e=>{
+  e.preventDefault(); userTouched=true;
+  const r=cv.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+  const before=s2i(mx,my);
+  view.zoom*= e.deltaY<0?1.15:1/1.15; clampView();
+  const after=i2s(before.ix,before.iy);
+  view.x+=mx-after.sx; view.y+=my-after.sy;
+  draw();
+},{passive:false});
+
+// перетаскивание / клики / щипок
+let drag=null;
+const activePointers=new Map(); let pinch=null; let spaceHeld=false;
+cv.addEventListener('pointerdown',e=>{
+  if(e.button>0) return;                 // только левая кнопка/тач (правый/средний — мимо)
+  hideCityTip();
+  try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+  const r=cv.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+  activePointers.set(e.pointerId,{x:mx,y:my});
+  if(activePointers.size>=2){                       // ЩИПОК (два пальца) — зум
+    const p=[...activePointers.values()], midx=(p[0].x+p[1].x)/2, midy=(p[0].y+p[1].y)/2;
+    pinch={ d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)||1, zoom:view.zoom, imgPt:s2i(midx,midy) };
+    drag=null; draggingWp=null; editor.dragCity=null; editor.drawingRiver=null;
+    cv.classList.remove('grabbing'); return;
+  }
+  const ip=s2i(mx,my);
+  // зажат пробел -> всегда панорама (даже в режимах кисти/рисования)
+  if(spaceHeld){ drag={mx,my, vx:view.x, vy:view.y, moved:false, ip}; cv.classList.add('grabbing'); return; }
+  // редактор-инструменты
+  if(EDITOR){
+    if(editor.calibrating){ handleCalib(ip); return; }
+    if(editor.tool==='city'){ addCityAt(ip); return; }
+    if(editor.tool==='river'){ editor.drawingRiver={name:"Река "+(CFG.rivers.length+1),wf:(editor.brush/view.zoom)/CFG.imgW,pts:[{nx:ip.ix/CFG.imgW,ny:ip.iy/CFG.imgH}]}; drag={riverDraw:true}; return; }
+    if(/^(sea|land|zoneAdd|zoneDel|blockAdd|blockDel)$/.test(editor.tool)){ drag={paint:true}; paintAt(ip); return; }
+    if(editor.tool==='fillSea'){ bucketFill(ip,0); return; }
+    if(editor.tool==='fillLand'){ bucketFill(ip,1); return; }
+    if(editor.tool==='pan'){ const hit=cityHit(mx,my); if(hit){editor.dragCity=hit; editor.dragStart={mx,my}; editor.dragMoved=false; return;} }
+  }
+  if(!EDITOR || editor.tool==='pan'){ const wh=waypointHit(mx,my); if(wh!==-1){ draggingWp=wh; return; } }
+  drag={mx,my, vx:view.x, vy:view.y, moved:false, ip};
+  cv.classList.add('grabbing');
+});
+cv.addEventListener('pointermove',e=>{
+  const r=cv.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+  if(activePointers.has(e.pointerId)) activePointers.set(e.pointerId,{x:mx,y:my});
+  if(pinch && activePointers.size>=2){              // ЩИПОК — зум к центру между пальцами
+    const p=[...activePointers.values()], nd=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)||1;
+    const midx=(p[0].x+p[1].x)/2, midy=(p[0].y+p[1].y)/2;
+    userTouched=true; view.zoom=pinch.zoom*(nd/pinch.d); clampView();
+    view.x=midx-pinch.imgPt.ix*view.zoom; view.y=midy-pinch.imgPt.iy*view.zoom; draw(); return;
+  }
+  if(EDITOR && /^(sea|land|fillSea|fillLand|river|zoneAdd|zoneDel|blockAdd|blockDel)$/.test(editor.tool)) editor.cursor={sx:mx,sy:my};
+  // подсказка о городе при наведении (все юзеры; в редакторе — только «Двигать»)
+  if(!drag && draggingWp==null && !pinch && (!EDITOR || editor.tool==='pan')){
+    const hc=cityHit(mx,my);
+    if(hc) showCityTip(hc, e.clientX, e.clientY); else hideCityTip();
+  } else hideCityTip();
+  if(drag&&drag.riverDraw){ const ip2=s2i(mx,my), pts=editor.drawingRiver.pts, last=pts[pts.length-1];
+    const minStep=(CFG.imgW/gridCols)*0.7;
+    if(!last || Math.hypot(ip2.ix-last.nx*CFG.imgW, ip2.iy-last.ny*CFG.imgH)>minStep) pts.push({nx:ip2.ix/CFG.imgW,ny:ip2.iy/CFG.imgH});
+    draw(); return; }
+  if(draggingWp!=null){ const ip2=s2i(mx,my); let best=18/view.zoom, snap=null;
+    CFG.cities.forEach(c=>{const dd=Math.hypot(c.nx*CFG.imgW-ip2.ix,c.ny*CFG.imgH-ip2.iy);if(dd<best){best=dd;snap=c;}});
+    waypoints[draggingWp]= snap?{ix:snap.nx*CFG.imgW,iy:snap.ny*CFG.imgH,city:snap}:{ix:ip2.ix,iy:ip2.iy};
+    draw(); return; }
+  if(EDITOR && editor.dragCity){ const ip=s2i(mx,my);
+    if(Math.hypot(mx-editor.dragStart.mx, my-editor.dragStart.my)>4) editor.dragMoved=true;
+    if(editor.dragMoved){ editor.dragCity.nx=ip.ix/CFG.imgW; editor.dragCity.ny=ip.iy/CFG.imgH; draw(); }
+    return; }
+  if(drag&&drag.paint){ paintAt(s2i(mx,my)); return; }
+  if(drag&&!drag.paint){
+    const dx=mx-drag.mx, dy=my-drag.my;
+    if(Math.abs(dx)+Math.abs(dy)>4){ drag.moved=true; userTouched=true; }
+    view.x=drag.vx+dx; view.y=drag.vy+dy; draw();
+  }
+  else if(EDITOR && editor.cursor && /^(sea|land|fillSea|fillLand|river|zoneAdd|zoneDel|blockAdd|blockDel)$/.test(editor.tool)) draw();
+});
+cv.addEventListener('pointerleave',()=>{ hideCityTip(); if(EDITOR&&editor.cursor){ editor.cursor=null; draw(); } });
+cv.addEventListener('pointercancel',e=>{ activePointers.delete(e.pointerId); if(activePointers.size<2) pinch=null; });
+// зажатие пробела — режим «рука» (панорама поверх любого инструмента)
+window.addEventListener('keydown',e=>{ if(e.code==='Space'){
+  const tag=(document.activeElement||{}).tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;
+  if(!spaceHeld){ spaceHeld=true; cv.classList.add('grabbing'); } e.preventDefault(); }});
+window.addEventListener('keyup',e=>{ if(e.code==='Space'){ spaceHeld=false; if(!drag) cv.classList.remove('grabbing'); }});
+// правый клик по карте — снять подсветку поиска
+cv.addEventListener('contextmenu',e=>{ e.preventDefault();
+  if(highlight){ highlight=null; if(pulseRAF){cancelAnimationFrame(pulseRAF);pulseRAF=null;}
+    const si=document.getElementById('searchInput'); if(si)si.value='';
+    const sc=document.getElementById('searchClear'); if(sc)sc.style.display='none';
+    const sr=document.getElementById('searchResults'); if(sr)sr.innerHTML='';
+    draw(); }
+});
+cv.addEventListener('pointerup',e=>{
+  const wasPinch = pinch!=null;
+  activePointers.delete(e.pointerId);
+  if(activePointers.size<2) pinch=null;
+  cv.classList.remove('grabbing');
+  if(wasPinch){ drag=null; return; }               // после щипка не ставим точку
+  const r=cv.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+  if(drag&&drag.riverDraw){
+    if(editor.drawingRiver && editor.drawingRiver.pts.length>1){ CFG.rivers.push(editor.drawingRiver); stampOneRiver(editor.drawingRiver); saveTerrain(); renderRiverList(); }
+    editor.drawingRiver=null; drag=null; draw(); return;
+  }
+  if(draggingWp!=null){ draggingWp=null; computeRoute(); return; }
+  if(EDITOR && editor.dragCity){ const c=editor.dragCity, moved=editor.dragMoved; editor.dragCity=null;
+    if(moved){ saveConfig(); refreshCityList(); }
+    else { const i=CFG.cities.indexOf(c); if(i>=0) editCity(i); }   // клик без сдвига -> окно редактирования
+    return; }
+  if(drag&&drag.paint){ const t=editor.tool; drag=null;
+    if(t==='blockAdd'||t==='blockDel') saveBlock(); else if(t==='zoneAdd'||t==='zoneDel') saveZone(); else saveTerrain(); return; }
+  if(drag&&!drag.moved && !(EDITOR&&editor.tool!=='pan')){
+    // клик = поставить точку маршрута (только во вкладке "Путь")
+    if(document.getElementById('tab-route').style.display!=='none') addWaypoint(drag.ip);
+  }
+  drag=null;
+});
+
+function cityHit(sx,sy){
+  for(const c of CFG.cities){const s=i2s(c.nx*CFG.imgW,c.ny*CFG.imgH);
+    if(Math.hypot(s.sx-sx,s.sy-sy)<10) return c;}
+  return null;
+}
+// ---- всплывающая подсказка о городе (для игроков и админа) ----
+function cityTypeName(t){ return t==='capital'?'Столица':t==='capnp'?'Столица':t==='cursed'?'Проклятый город':'Город'; }
+function escTip(s){ return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+function showCityTip(c,clientX,clientY){
+  const el=document.getElementById('cityTip'); if(!el) return;
+  let h='<b>'+escTip(c.name||'Город')+'</b><span class="ct-type">'+cityTypeName(c.type)+'</span>';
+  if(hasGate(c)) h+='<span class="ct-line"><span class="ct-em">🌀</span>Есть портал</span>';
+  if(c.port)     h+='<span class="ct-line"><span class="ct-em">⚓</span>Есть порт</span>';
+  if(c.type==='cursed') h+='<span class="ct-line"><span class="ct-em">💀</span>Проклятое место</span>';
+  el.innerHTML=h; el.style.display='block';
+  // позиционирование рядом с курсором, с отражением у краёв
+  const w=el.offsetWidth, ht=el.offsetHeight, pad=14;
+  let x=clientX+pad, y=clientY+pad;
+  if(x+w>innerWidth-6) x=clientX-pad-w;
+  if(y+ht>innerHeight-6) y=clientY-pad-ht;
+  el.style.left=Math.max(6,x)+'px'; el.style.top=Math.max(6,y)+'px';
+}
+function hideCityTip(){ const el=document.getElementById('cityTip'); if(el) el.style.display='none'; }
+function waypointHit(sx,sy){
+  for(let i=0;i<waypoints.length;i++){const s=i2s(waypoints[i].ix,waypoints[i].iy);
+    if(Math.hypot(s.sx-sx,s.sy-sy)<11) return i;}
+  return -1;
+}
+function addWaypoint(ip){
+  // притянуть к городу, если близко (в px картинки)
+  let snap=null, best=18/view.zoom;
+  CFG.cities.forEach(c=>{const d=Math.hypot(c.nx*CFG.imgW-ip.ix, c.ny*CFG.imgH-ip.iy); if(d<best){best=d;snap=c;}});
+  if(snap) waypoints.push({ix:snap.nx*CFG.imgW, iy:snap.ny*CFG.imgH, city:snap});
+  else waypoints.push({ix:ip.ix, iy:ip.iy});
+  computeRoute();
+}
+
+/* ---- поиск ---- */
+const sInput=document.getElementById('searchInput'), sClear=document.getElementById('searchClear'), sRes=document.getElementById('searchResults');
+sInput.addEventListener('input',()=>{
+  const q=sInput.value.trim().toLowerCase();
+  sClear.style.display=q?'block':'none';
+  if(!q){ sRes.innerHTML=''; return; }
+  const m=CFG.cities.filter(c=>c.name.toLowerCase().includes(q)).slice(0,6);
+  if(!m.length){ sRes.innerHTML='<div class="muted" style="padding:6px">ничего не найдено</div>'; return; }
+  sRes.innerHTML=m.map(c=>`<div class="r" data-i="${CFG.cities.indexOf(c)}"><span>${c.name}</span><small>${c.country||c.type||''}</small></div>`).join('');
+  sRes.querySelectorAll('.r').forEach(el=>el.onclick=()=>{
+    const c=CFG.cities[+el.dataset.i]; sInput.value=c.name; sRes.innerHTML=''; focusCity(c);
+  });
+});
+sInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ const f=sRes.querySelector('.r'); if(f) f.click(); }});
+sClear.onclick=()=>{ sInput.value=''; sRes.innerHTML=''; sClear.style.display='none'; highlight=null; draw(); };
+
+/* ---- галка названий ---- */
+const labelToggle=document.getElementById('labelToggle');
+labelToggle.checked=labelsOn;
+labelToggle.onchange=()=>{ labelsOn=labelToggle.checked; draw(); };
+
+/* ---- свернуть панель ---- */
+function toggleSide(force){
+  if(force==='hide') document.body.classList.add('sidehidden');
+  else if(force==='show') document.body.classList.remove('sidehidden');
+  else document.body.classList.toggle('sidehidden');
+  requestAnimationFrame(()=>{ resize(); if(!userTouched) fitView(); draw(); });
+}
+document.getElementById('sideToggle').onclick=()=>toggleSide();
+document.getElementById('sideClose').onclick=()=>toggleSide('hide');
+
+/* ---- зум-кнопки ---- */
+function zoomBy(f){ userTouched=true; const cx=cv.width/2,cy=cv.height/2; const b=s2i(cx,cy); view.zoom*=f; clampView(); const a=i2s(b.ix,b.iy); view.x+=cx-a.sx; view.y+=cy-a.sy; draw(); }
+document.getElementById('zoomIn').onclick=()=>zoomBy(1.3);
+document.getElementById('zoomOut').onclick=()=>zoomBy(1/1.3);
+document.getElementById('zoomReset').onclick=()=>{userTouched=false;fitView();draw();};
+
+/* ---- блок «Информация и скорости» ---- */
+document.getElementById('infoBtn').onclick=()=>{ document.getElementById('infoPanel').innerHTML=infoHtml(); document.getElementById('infoModal').classList.add('open'); };
+document.getElementById('infoModal').onclick=e=>{ if(e.target.id==='infoModal') e.currentTarget.classList.remove('open'); };
+
+/* ---- модалка добавления города ---- */
+document.getElementById('cmAdd').onclick=cmConfirm;
+document.getElementById('cmCancel').onclick=cmClose;
+document.getElementById('cityModal').onclick=e=>{ if(e.target.id==='cityModal') cmClose(); };
+document.getElementById('cmName').addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();cmConfirm();} if(e.key==='Escape')cmClose(); });
+
+/* ---- вкладки ---- */
+// слои карты (только админ): гео / политическая (в разработке) / с отметками
+document.querySelectorAll('#layerTabs .tab').forEach(t=>t.onclick=()=>{
+  const layer=t.dataset.layer;
+  if(layer==='political'){ document.getElementById('topHint').textContent='Политическая карта — в разработке.'; return; }
+  document.querySelectorAll('#layerTabs .tab').forEach(x=>x.classList.remove('on')); t.classList.add('on');
+  showAnnotated=(layer==='admin'); if(showAnnotated) ensureAnnotated(); draw();
+});
+
+/* ---- тип пути / маршрут ---- */
+document.getElementById('persona').onchange=e=>{ typeId=e.target.value; document.getElementById('legPaceBox').style.display=(typeId==='portal')?'block':'none'; renderType(); computeRoute(); };
+document.getElementById('routeType').onchange=e=>{ routeType=e.target.value; computeRoute(); };
+document.getElementById('legPace').onchange=e=>{ legTypeId=e.target.value; computeRoute(); };
+function renderType(){ /* чипы убраны — скорости в модалке «Информация» */ }
+// Таблицы для блока «Информация» (генерятся из данных, всегда актуальны)
+// маленькая SVG-иконка метки города — 1-в-1 как на карте (для легенды, не эмодзи)
+function cityGlyph(type){
+  const S=18,c=9;
+  const dia=(R,fill)=>`<polygon points="${c},${c-R} ${c+R},${c} ${c},${c+R} ${c-R},${c}" fill="${fill}"/>`;
+  const cir=(R,fill,stroke)=>`<circle cx="${c}" cy="${c}" r="${R}" fill="${fill}"${stroke?` stroke="${stroke}" stroke-width="1.4"`:''}/>`;
+  let g;
+  if(type==='capital')    g=dia(8,'#1b2430')+dia(6.5,'#e0892e')+dia(3,'#e9eef3');
+  else if(type==='city')  g=dia(8,'#1b2430')+dia(6.5,'#3a72b8')+dia(3,'#e9eef3');
+  else if(type==='capnp') g=cir(7,'#1b2430')+cir(6,'#e0892e')+cir(2.7,'#e9eef3');
+  else if(type==='town')  g=cir(6.5,'#241608')+cir(5.5,'#7a5230')+cir(2.6,'#efe7d6');
+  else                    g=cir(6,'#9a9a9a','#2b2825');
+  return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" style="vertical-align:-4px;margin-right:2px">${g}</svg>`;
+}
+function infoHtml(){
+  const r=a=>`${Math.round(a[0])}–${Math.round(a[1])}`;
+  let h=`<h2 class="info-title">${EDITOR?'Скорости и способы':'Как пользоваться'}</h2>`;
+  if(EDITOR){   // таблицы скоростей — только админу
+    h+=`<div class="days" style="text-align:center;margin-bottom:8px">км/день · диапазон мин–макс. Маршрут сам берёт быстрейшую смесь.</div>`;
+    h+=`<div class="info-sec">Обычный транспорт</div>`;
+    h+=`<table><tr><th>Тип пути</th><th>🚶🐎📯 Суша</th><th>🛶 Река ↓ / ↑</th><th>⚓ Море</th></tr>`;
+    TYPES.forEach(t=>{ h+=`<tr><td>${t.name}</td><td class="r">${r(t.land)}</td><td class="r">${r(t.riverDown)} / ${r(t.riverUp)}</td><td class="r">${r(t.sea)}</td></tr>`; });
+    h+=`</table>`;
+    h+=`<div class="info-sec">🚂🚢 Паровая зона — Сильвания / Креолия</div>`;
+    h+=`<table><tr><th>Тип пути</th><th>🚂 Паровоз</th><th>🚢 Река (база)</th><th>🚢 Море</th></tr>`;
+    TYPES.forEach(t=>{ h+=`<tr><td>${t.name}</td><td class="r">${r(t.steamTrain)}</td><td class="r">${r(t.steamRiver)}</td><td class="r">${r(t.steamSea)}</td></tr>`; });
+    h+=`</table>`;
+    h+=`<div class="days">Речной пароход: вниз ×${STEAM_DOWN}, вверх ×${STEAM_UP}. Паровозы/пароходы — только внутри зоны.</div>`;
+  }
+  h+=`<div class="info-sec">Время в пути — это диапазон</div>`;
+  h+=`<div class="info-note">Расчёт времени вашего путешествия — это диапазон, который может быть достаточно широким. В пределах выбранного типа передвижения скорость зависит от многих факторов: есть ли груз или путешествие налегке, спешит ли обоз/капитан, или вы сели на более медленное торговое судно, гружёное товарами, и так далее.</div>`;
+  h+=`<div class="info-sec">Как считается</div>`;
+  h+=`<ul class="info-ul">`+
+     `<li>Направление по реке (вниз/вверх) и пересадки суша↔вода — считается автоматически.</li>`+
+     `<li>В Сильвании и Креолии — 🚂 паровозы и 🚢 пароходы.</li>`+
+     `<li>🌀 Врата Титанов (тип пути «Через Врата») — магический переход между городами с порталом. <b>Сам переход — почти мгновенный</b>; указанное время — это магический ритуал подготовки перед переходом и трансферы до/от портала.</li>`+
+     `<li>В Сильвании и Креолии Врат нет: до границы добираются обычным путём, дальше — паром или поезд.</li>`+
+     `</ul>`;
+  h+=`<div class="info-sec">Метки городов</div>`;
+  h+=`<div class="days legend">`+
+     `${cityGlyph('capital')} столица · ${cityGlyph('capnp')} столица без портала · ${cityGlyph('city')} город с порталом · ${cityGlyph('town')} город · ${cityGlyph('cursed')} проклятый`+
+     `</div>`;
+  h+=`<div class="info-sec">Транспорт</div>`;
+  h+=`<div class="days">🚶 пешком · 🐎 верхом · 📯 курьером · 🛶 лодка · ⚓ морем · 🚂 паровоз · 🚢 пароход</div>`;
+  return h;
+}
+
+/* ---- точки ---- */
+document.getElementById('undoPt').onclick=()=>{waypoints.pop();computeRoute();};
+document.getElementById('clearPt').onclick=()=>{waypoints=[];routePath=null;computeRoute();};
+
+/* ---- врата ---- */
+/* Врата теперь — тип пути «✦ Через Врата» (см. computePortalRoute). Отдельной вкладки нет. */
+
+/* ============================ РЕДАКТОР ============================ */
+if(EDITOR){
+  // инструменты
+  document.querySelectorAll('.tool').forEach(t=>t.onclick=()=>{
+    document.querySelectorAll('.tool').forEach(x=>x.classList.remove('on')); t.classList.add('on');
+    editor.tool=t.dataset.tool; editor.calibrating=null; editor.drawingRiver=null;
+    const hints={pan:"Двигать: тащи город — двигать, КЛИК по городу — изменить (имя/тип).",city:"Клик по карте — добавить город.",river:"Река: зажми и веди линию.",sea:"Кисть: красишь МОРЕ.",land:"Кисть: красишь СУШУ.",fillSea:"Заливка: клик по области — вся станет МОРЕМ.",fillLand:"Заливка: клик по области — вся станет СУШЕЙ.",zoneAdd:"Кисть: добавляешь паровую зону (Сильвания/Креолия).",zoneDel:"Кисть: стираешь паровую зону."};
+    document.getElementById('toolHint').textContent=hints[editor.tool]||'';
+    document.getElementById('brushBox').style.display=/^(sea|land|zoneAdd|zoneDel|river|blockAdd|blockDel)$/.test(editor.tool)?'block':'none';
+    draw();
+  });
+  document.getElementById('brush').oninput=e=>{editor.brush=+e.target.value;document.getElementById('brushVal').textContent=e.target.value;};
+  cv.addEventListener('dblclick',()=>{ if(editor.drawingRiver){ if(editor.drawingRiver.pts.length>1){CFG.rivers.push(editor.drawingRiver);rasterRivers();saveConfig();saveTerrain();} editor.drawingRiver=null; draw(); }});
+
+  document.getElementById('calBtn').onclick=()=>{editor.calibrating={pts:[]};document.getElementById('toolHint').textContent="Кликни по началу линейки, затем по концу.";};
+  // выбор новой карты файлом -> маска пересоздаётся под неё САМА
+  document.getElementById('mapFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const u=URL.createObjectURL(f);terrainGrid=null;CFG.terrain=null;CFG.mapSrc=DEFAULT_CONFIG.mapSrc;loadMap(u);document.getElementById('topHint').textContent='✓ Новая карта загружена, маска воды пересоздана автоматически. Проверь и нажми Экспорт.';};
+  document.getElementById('exportBtn').onclick=exportConfig;
+  document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
+  document.getElementById('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{CFG=Object.assign(structuredClone(DEFAULT_CONFIG),JSON.parse(rd.result));terrainGrid=null;saveConfig();loadMap(CFG.mapSrc.startsWith('data:')?DEFAULT_CONFIG.mapSrc:CFG.mapSrc);}catch(err){alert('Битый JSON');}};rd.readAsText(f);};
+  document.getElementById('rebuildTerr').onclick=()=>{CFG.terrain=null;terrainGrid=null;buildTerrain();draw();};
+  document.getElementById('refineGrid').onclick=()=>{
+    if(!terrainGrid) return;
+    const oc=gridCols;
+    if(oc>=1320 && !confirm('Сетка станет очень мелкой ('+oc+'→'+(oc*2)+'). Может тормозить. Продолжить?')) return;
+    const or=gridRows, nc=oc*2, nr=Math.round(nc*CFG.imgH/CFG.imgW);
+    const up=g=>{ const n=new Uint8Array(nc*nr); for(let y=0;y<nr;y++){const oy=Math.floor(y*or/nr); for(let x=0;x<nc;x++){const ox=Math.floor(x*oc/nc); n[y*nc+x]=g[oy*oc+ox];}} return n; };
+    terrainGrid=up(terrainGrid); if(zoneGrid) zoneGrid=up(zoneGrid); if(blockGrid) blockGrid=up(blockGrid);
+    gridCols=nc; gridRows=nr; CFG.gridCols=nc; CFG.autoRefined=true;
+    saveTerrain(); if(zoneGrid) saveZone(); if(blockGrid) saveBlock(); saveConfig();
+    draw();
+    document.getElementById('topHint').textContent='Сетка измельчена: '+oc+' → '+nc+' колонок (маска сохранена).';
+  };
+  document.getElementById('coarsenGrid').onclick=()=>{
+    if(!terrainGrid) return;
+    const oc=gridCols;
+    if(oc<=110){ alert('Сетка уже крупная ('+oc+' колонок) — мельче не имеет смысла укрупнять.'); return; }
+    const nc=Math.round(oc/2), or=gridRows, nr=Math.round(nc*CFG.imgH/CFG.imgW);
+    const down=g=>{ const n=new Uint8Array(nc*nr); for(let y=0;y<nr;y++){const oy=Math.floor(y*or/nr); for(let x=0;x<nc;x++){const ox=Math.floor(x*oc/nc); n[y*nc+x]=g[oy*oc+ox];}} return n; };
+    terrainGrid=down(terrainGrid); if(zoneGrid) zoneGrid=down(zoneGrid); if(blockGrid) blockGrid=down(blockGrid);
+    gridCols=nc; gridRows=nr; CFG.gridCols=nc; CFG.autoRefined=true;
+    saveTerrain(); if(zoneGrid) saveZone(); if(blockGrid) saveBlock(); saveConfig();
+    draw();
+    document.getElementById('topHint').textContent='Сетка укрупнена: '+oc+' → '+nc+' колонок.';
+  };
+  document.getElementById('maskView').onchange=e=>{ showMask=e.target.checked; draw(); };
+  document.getElementById('zoneView').onchange=e=>{ showZone=e.target.checked; draw(); };
+  document.getElementById('blockView').onchange=e=>{ showBlock=e.target.checked; draw(); };
+  document.getElementById('clearRivers').onclick=()=>{ if(!CFG.rivers.length||confirm('Удалить все реки?')){ if(terrainGrid)for(let i=0;i<terrainGrid.length;i++)if(terrainGrid[i]===2)terrainGrid[i]=1; CFG.rivers=[]; saveTerrain(); renderRiverList(); draw(); } };
+}
+function handleCalib(ip){
+  editor.calibrating.pts.push(ip);
+  if(editor.calibrating.pts.length===2){
+    const [p,q]=editor.calibrating.pts;
+    const px=Math.hypot(p.ix-q.ix,p.iy-q.iy);
+    const km=parseFloat(prompt('Сколько КМ между двумя точками? (по линейке карты)','1800'));
+    if(km>0){ CFG.kmPerWidth=(km/px)*CFG.imgW; saveConfig(); updateScaleInfo(); computeRoute(); }
+    editor.calibrating=null;
+  }
+}
+let pendingCity=null, editingIdx=-1, lastCityType='town';
+function openCityModal(){ document.getElementById('cityModal').classList.add('open'); setTimeout(()=>document.getElementById('cmName').focus(),40); }
+function addCityAt(ip){
+  editingIdx=-1; pendingCity={nx:ip.ix/CFG.imgW, ny:ip.iy/CFG.imgH};
+  document.getElementById('cmTitle').textContent='Новый город';
+  document.getElementById('cmName').value=''; document.getElementById('cmType').value=lastCityType;  // помним последний выбор
+  document.getElementById('cmPort').checked=false;
+  document.getElementById('cmWrap').checked=false;
+  openCityModal();
+}
+function editCity(i){
+  const c=CFG.cities[i]; if(!c) return;
+  editingIdx=i; pendingCity=null;
+  document.getElementById('cmTitle').textContent='Изменить город';
+  document.getElementById('cmName').value=c.name||''; document.getElementById('cmType').value=c.type||'town';
+  document.getElementById('cmPort').checked=!!c.port;
+  document.getElementById('cmWrap').checked=!!c.wrap;
+  openCityModal();
+}
+function cmConfirm(){
+  const name=document.getElementById('cmName').value.trim(), type=document.getElementById('cmType').value;
+  const port=document.getElementById('cmPort').checked;
+  const wrap=document.getElementById('cmWrap').checked;
+  lastCityType=type;   // запоминаем выбранный тип на сессию
+  if(editingIdx>=0 && CFG.cities[editingIdx]){ CFG.cities[editingIdx].name=name; CFG.cities[editingIdx].type=type; CFG.cities[editingIdx].port=port; CFG.cities[editingIdx].wrap=wrap; }
+  else if(pendingCity){ CFG.cities.push({name, type, port, wrap, nx:pendingCity.nx, ny:pendingCity.ny}); }
+  else { cmClose(); return; }
+  saveConfig(); refreshCityList(); refreshGateSelects(); draw(); cmClose();
+}
+function cmClose(){ pendingCity=null; editingIdx=-1; document.getElementById('cityModal').classList.remove('open'); }
+function riverClick(ip){
+  if(!editor.drawingRiver) editor.drawingRiver={name:"Река",wf:(editor.brush/view.zoom)/CFG.imgW,pts:[]};
+  editor.drawingRiver.pts.push({nx:ip.ix/CFG.imgW,ny:ip.iy/CFG.imgH}); draw();
+}
+function bucketFill(ip,target){
+  if(!terrainGrid) return;
+  const W=gridCols,H=gridRows;
+  const cx=Math.max(0,Math.min(W-1,Math.round(ip.ix*W/CFG.imgW)));
+  const cy=Math.max(0,Math.min(H-1,Math.round(ip.iy*H/CFG.imgH)));
+  const start=cy*W+cx, cur=terrainGrid[start];
+  if(cur===target) return;
+  const st=[start];
+  while(st.length){ const c=st.pop(); if(terrainGrid[c]!==cur) continue; terrainGrid[c]=target;
+    const x=c%W,y=(c/W)|0;
+    if(x>0)st.push(c-1); if(x<W-1)st.push(c+1); if(y>0)st.push(c-W); if(y<H-1)st.push(c+W); }
+  saveTerrain(); draw();
+}
+function paintAt(ip){
+  const isZone  = editor.tool==='zoneAdd'||editor.tool==='zoneDel';
+  const isBlock = editor.tool==='blockAdd'||editor.tool==='blockDel';
+  const grid = isBlock ? blockGrid : (isZone ? zoneGrid : terrainGrid);
+  if(!grid) return;
+  const val = isBlock ? (editor.tool==='blockAdd'?1:0)
+            : isZone  ? (editor.tool==='zoneAdd'?1:0)
+            : (editor.tool==='sea'?0:1);
+  const cx=ip.ix*gridCols/CFG.imgW, cy=ip.iy*gridRows/CFG.imgH;
+  const rad=(editor.brush/view.zoom)*gridCols/CFG.imgW;  // экранный радиус -> клетки сетки
+  for(let y=Math.floor(cy-rad);y<=cy+rad;y++)for(let x=Math.floor(cx-rad);x<=cx+rad;x++){
+    if(x<0||x>=gridCols||y<0||y>=gridRows)continue;
+    if(Math.hypot(x-cx,y-cy)<=rad) grid[y*gridCols+x]=val;
+  }
+  draw();
+}
+// Сохранение маски: НЕ перештамповываем реки (иначе кисть не стёрла бы их).
+// Реки уже в маске (=2), линии нужны лишь для течения -> applyRivers(false).
+function saveTerrain(){ applyRivers(false); riverDist=null; CFG.terrain=Array.from(terrainGrid).join(''); saveConfig(); }
+// нанести ОДНУ реку в маску (при рисовании)
+// диск радиуса rad (в клетках) вокруг (cx,cy): val=новое значение; fromVal!=null — только поверх таких клеток
+function stampDisk(cx,cy,rad,val,fromVal){
+  const set=(x,y)=>{ if(x<0||x>=gridCols||y<0||y>=gridRows)return; const idx=y*gridCols+x; if(fromVal==null||terrainGrid[idx]===fromVal) terrainGrid[idx]=val; };
+  if(rad<=0){ set(Math.round(cx),Math.round(cy)); return; }
+  for(let y=Math.floor(cy-rad);y<=cy+rad;y++)for(let x=Math.floor(cx-rad);x<=cx+rad;x++)
+    if((x-cx)*(x-cx)+(y-cy)*(y-cy)<=rad*rad) set(x,y);
+}
+function riverRadCells(rv){ return Math.max(0,Math.round((rv.wf||0)*gridCols)); }  // ширина кисти реки -> радиус в клетках текущей сетки
+function stampOneRiver(rv){
+  if(!terrainGrid||!rv||rv.pts.length<2) return;
+  const rad=riverRadCells(rv);
+  for(let i=0;i<rv.pts.length-1;i++){
+    const a=rv.pts[i],b=rv.pts[i+1];
+    const ax=a.nx*gridCols,ay=a.ny*gridRows,bx=b.nx*gridCols,by=b.ny*gridRows;
+    const steps=Math.ceil(Math.hypot(bx-ax,by-ay))+1;
+    for(let s=0;s<=steps;s++) stampDisk(ax+(bx-ax)*s/steps, ay+(by-ay)*s/steps, rad, 2, null);
+  }
+}
+// стереть клетки ОДНОЙ реки из маски (при удалении из списка)
+function eraseRiverCells(rv){
+  if(!terrainGrid||!rv||rv.pts.length<2) return;
+  const rad=riverRadCells(rv);
+  for(let i=0;i<rv.pts.length-1;i++){
+    const a=rv.pts[i],b=rv.pts[i+1];
+    const ax=a.nx*gridCols,ay=a.ny*gridRows,bx=b.nx*gridCols,by=b.ny*gridRows;
+    const steps=Math.ceil(Math.hypot(bx-ax,by-ay))+1;
+    for(let s=0;s<=steps;s++) stampDisk(ax+(bx-ax)*s/steps, ay+(by-ay)*s/steps, rad, 1, 2);
+  }
+}
+function exportConfig(){
+  const c=structuredClone(CFG);
+  if(terrainGrid) c.terrain=Array.from(terrainGrid).join('');
+  if(zoneGrid) c.zone=Array.from(zoneGrid).join('');
+  if(blockGrid) c.block=Array.from(blockGrid).join('');
+  if(c.mapSrc.startsWith('data:')||c.mapSrc.startsWith('blob:')) c.mapSrc=DEFAULT_CONFIG.mapSrc;
+  const blob=new Blob([JSON.stringify(c,null,1)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='config.json'; a.click();
+}
+function updateScaleInfo(){
+  const el=document.getElementById('scaleInfo'); if(!el)return;
+  el.textContent=`1 px ≈ ${kmPerPx().toFixed(2)} км · ширина карты ≈ ${Math.round(CFG.kmPerWidth).toLocaleString('ru')} км`;
+}
+function refreshCityList(){
+  const el=document.getElementById('cityList'); if(!el)return;
+  el.innerHTML='';
+  CFG.cities.forEach((c,i)=>{
+    const row=document.createElement('div'); row.className='cityrow';
+    row.innerHTML=`<span><span class="swatch" style="background:${cityColor(c.type)}"></span>${c.name||'<i style="opacity:.6">без названия</i>'}</span><span style="display:flex;gap:3px"><span class="ed" data-i="${i}" title="Изменить">✎</span><span class="x" data-i="${i}" title="Удалить">✕</span></span>`;
+    row.querySelector('.ed').onclick=()=>editCity(i);
+    row.querySelector('.x').onclick=()=>{CFG.cities.splice(i,1);saveConfig();refreshCityList();refreshGateSelects();draw();};
+    el.appendChild(row);
+  });
+}
+
+/* ---- селекты врат ---- */
+function refreshGateSelects(){ /* вкладка Врат удалена — порталы теперь тип пути */ }
+
+// сброс клеток рек в маске и повторное нанесение оставшихся рек
+function reapplyRivers(){
+  if(terrainGrid){ for(let i=0;i<terrainGrid.length;i++) if(terrainGrid[i]===2) terrainGrid[i]=1; applyRivers(true); }
+  saveTerrain(); draw();
+}
+function renderRiverList(){
+  const el=document.getElementById('riverList'); if(!el) return;
+  if(!CFG.rivers.length){ el.innerHTML='<div class="muted" style="padding:4px">рек нет</div>'; return; }
+  el.innerHTML='';
+  CFG.rivers.forEach((rv,i)=>{
+    const row=document.createElement('div'); row.className='cityrow';
+    row.innerHTML=`<span><span class="swatch" style="background:#4db1c8"></span>${rv.name||('Река '+(i+1))}</span><span style="display:flex;gap:3px"><span class="ed" data-i="${i}" title="Переименовать реку">✎</span><span class="x" data-i="${i}" title="Удалить">✕</span></span>`;
+    row.querySelector('.ed').onclick=()=>{ const nm=prompt('Название реки:', rv.name||('Река '+(i+1))); if(nm!==null){ rv.name=nm.trim(); saveConfig(); saveTerrain(); renderRiverList(); } };
+    row.querySelector('.x').onclick=()=>{ eraseRiverCells(CFG.rivers[i]); CFG.rivers.splice(i,1); saveTerrain(); renderRiverList(); draw(); };
+    el.appendChild(row);
+  });
+}
+function refreshAll(){ renderType(); refreshGateSelects(); if(EDITOR){refreshCityList();renderRiverList();updateScaleInfo();} }
+
+/* ============================ СТАРТ ============================ */
+function onViewportResize(){ resize(); if(!userTouched) fitView(); draw(); }
+window.addEventListener('resize', onViewportResize);
+if(window.ResizeObserver){ new ResizeObserver(onViewportResize).observe(cv.parentElement); }
+{ const mn=document.getElementById('modeNote');
+  if(EDITOR){ mn.textContent="⚙ Режим редактора. Правки сохраняются локально, экспортируй config.json для публикации."; }
+  else { mn.textContent=""; mn.style.display="none"; } }   // игроки НЕ видят подсказку про #editor
+// подсказка управления — адаптивно под тач/мышь, в два ряда
+const IS_TOUCH = (window.matchMedia&&matchMedia('(pointer:coarse)').matches) || ('ontouchstart' in window);
+document.getElementById('topHint').innerHTML = IS_TOUCH ? 'Щипок — зум<br>Палец — двигать карту' : 'Колесо — зум<br>перетаскивание, пробел';
+// на телефоне панель сворачиваем по умолчанию — карта во весь экран (открыть кнопкой ☰)
+if(window.matchMedia && matchMedia('(max-width:760px)').matches) document.body.classList.add('sidehidden');
+renderType();
+(async function boot(){
+  CFG = await resolveConfig();
+  loadMap(CFG.mapSrc && !CFG.mapSrc.startsWith('data:') ? CFG.mapSrc : DEFAULT_CONFIG.mapSrc);
+})();
+</script>
+</body>
+</html>
