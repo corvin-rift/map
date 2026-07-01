@@ -191,6 +191,7 @@ body.sidehidden .side{display:none;}
 .info-ul li{margin-bottom:4px;}
 .info-note{font-size:12.5px;line-height:1.6;color:var(--text-light);margin:4px 0 2px;}
 .info-panel .legend{line-height:2.1;}
+.info-panel .days{font-size:12px;line-height:1.55;color:var(--text-light);opacity:.85;margin:4px 0 10px;}
 .info-panel .legend svg{vertical-align:-4px;}
 
 /* модалка добавления города */
@@ -209,6 +210,7 @@ body.sidehidden .side{display:none;}
   padding:8px 11px;box-shadow:0 8px 26px rgba(0,0,0,.5);font-size:12.5px;color:var(--text);}
 #cityTip b{display:block;font-family:var(--font-title);font-weight:700;font-size:14px;color:var(--text-light);margin-bottom:2px;}
 #cityTip .ct-type{display:block;font-size:9.5px;color:rgba(var(--accent),1);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;opacity:.85;}
+#cityTip .ct-feod{display:block;font-size:11px;font-style:italic;color:var(--text-light);opacity:.75;margin:-1px 0 4px;}
 #cityTip .ct-line{display:flex;align-items:center;gap:6px;font-size:11px;line-height:1.7;color:var(--text-light);}
 #cityTip .ct-line .ct-em{font-size:13px;line-height:1;}
 .cm-port{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-light);cursor:pointer;line-height:1.3;}
@@ -257,13 +259,16 @@ body.sidehidden .side{display:none;}
           <option value="land">🥾 Только по суше</option>
           <option value="water">🌊 Только по воде</option>
           <option value="portal">🌀 Через Врата</option>
+          <option value="flight">🦅 Полёт</option>
         </select>
-        <label class="lbl">Скорость пути</label>
-        <select id="persona">
-          <option value="simple">🚶 Простой путь — пешком, обоз, повозки</option>
-          <option value="fast" selected>🐎 Быстрый путь — верхом налегке</option>
-          <option value="courier">📯 Срочная депеша — сменные лошади</option>
-        </select>
+        <div id="personaBox">
+          <label class="lbl">Скорость пути</label>
+          <select id="persona">
+            <option value="simple">🚶 Простой путь — пешком, обоз, повозки</option>
+            <option value="fast" selected>🐎 Быстрый путь — верхом налегке</option>
+            <option value="courier">📯 Срочная депеша — сменные лошади</option>
+          </select>
+        </div>
         <div id="legPaceBox" style="display:none">
           <label class="lbl">Темп до и от Врат</label>
           <select id="legPace">
@@ -271,6 +276,17 @@ body.sidehidden .side{display:none;}
             <option value="fast" selected>🐎 Быстрый</option>
             <option value="courier">📯 Срочная депеша</option>
           </select>
+          <label class="cm-port" style="margin-top:10px;font-size:12px"><input type="checkbox" id="gateFlight"> 🦅 Уникальное: доступность полёта</label>
+          <small class="note">На пути до и от Врат автоматически берётся самый оптимальный из доступных видов передвижения (в заданном темпе).</small>
+        </div>
+        <div id="flightPaceBox" style="display:none">
+          <label class="lbl">Скорость полёта</label>
+          <select id="flightPace">
+            <option value="simple">🐾 Простой путь — с грузом или в непогоду</option>
+            <option value="fast" selected>🦅 Быстрый путь — крылатый путник налегке</option>
+            <option value="courier">✨ Исключительный — тренированный курьер</option>
+          </select>
+          <small class="note">● Доступно только летающим расам и редким, сложно приручающимся животным (есть не у каждого герцога).<br>● Полёт возможен только над сушей: реки и неширокие проливы перелетаются свободно, но непроходимые зоны и открытое море — нет.</small>
         </div>
       </div>
 
@@ -359,13 +375,14 @@ body.sidehidden .side{display:none;}
     </div>
     <div class="loading" id="loading"><div class="spin"></div><div>Загрузка карты…</div></div>
     <div id="cityTip"></div>
-    <div class="float bl"><button class="fbtn" id="infoBtn">ⓘ Информация и скорости</button></div>
+    <div class="float bl"><button class="fbtn" id="infoBtn">ⓘ Инфо и скорости</button></div>
     <div id="infoModal"><div class="info-panel" id="infoPanel"></div></div>
     <div id="cityModal"><div class="cm-panel">
       <div class="cm-title" id="cmTitle">Новый город</div>
       <input type="text" id="cmName" placeholder="Название (можно оставить пустым)" autocomplete="off">
       <input type="text" id="cmCountry" list="cmCountryList" placeholder="Принадлежность (страна)" autocomplete="off">
       <datalist id="cmCountryList"></datalist>
+      <input type="text" id="cmFeod" placeholder="Феод (необязательно), напр. Обсидиановое княжество" autocomplete="off">
       <select id="cmType">
         <option value="capital">Столица (с порталом, оранжевый ромб)</option>
         <option value="capnp">Столица без портала (оранжевый круг)</option>
@@ -373,6 +390,7 @@ body.sidehidden .side{display:none;}
         <option value="town" selected>Город (без портала, коричневый круг)</option>
         <option value="cursed">Проклятый</option>
       </select>
+      <input type="text" id="cmTypeLabel" placeholder="Свой текст вместо «Город»/«Столица» (необязательно)" autocomplete="off">
       <label class="cm-port"><input type="checkbox" id="cmPort"> ⚓ Портовый город — есть выход к воде (река/море)</label>
       <label class="cm-port"><input type="checkbox" id="cmWrap"> ↵ Название в две строки (на карте)</label>
       <div class="cm-btns"><button class="btn sm" id="cmAdd">Добавить</button><button class="btn ghost sm" id="cmCancel">Отмена</button></div>
@@ -394,7 +412,7 @@ if(EDITOR) document.body.classList.add('editor');
 
 // Версия публикации — увеличивай на 1 при каждом обновлении карты/config.json,
 // чтобы у игроков подгружались свежие файлы без Ctrl+Shift+R.
-const ASSET_VER = 2;
+const ASSET_VER = 3;
 function verUrl(u){
   if(!u || u.startsWith('data:') || u.startsWith('blob:')) return u;
   return u + (u.includes('?')?'&':'?') + 'v=' + ASSET_VER;
@@ -452,13 +470,22 @@ const TYPES = [
    land:[30,60],  sea:[120,250], riverDown:[50,100], riverUp:[10,25],
    steamTrain:[320,550], steamRiver:[120,220], steamSea:[220,360]},
   {id:"courier", name:"Срочная депеша", icon:"📯", landLabel:"курьером",      desc:"сменные лошади, быстрые суда",
-   land:[90,130], sea:[200,300], riverDown:[50,100], riverUp:[10,25],
+   land:[90,130], sea:[200,300], riverDown:[60,150], riverUp:[15,45],
    steamTrain:[550,850], steamRiver:[180,300], steamSea:[320,500]}
 ];
 const STEAM_DOWN=1.1, STEAM_UP=0.75;   // речные множители парохода
 function jt(){ return TYPES.find(t=>t.id===typeId)||TYPES[1]; }
 const mid=a=>(a[0]+a[1])/2;
+// Полёт — отдельный тип пути: летающие расы/редкие ездовые звери, единая скорость
+// (не зависит от суши/реки под ними), только над сушей (море — лишь неширокие проливы).
+const FLIGHT_TYPES = [
+  {id:"simple",  name:"Простой путь",     icon:"🐾", desc:"с грузом или в непогоду", land:[40,70]},
+  {id:"fast",    name:"Быстрый путь",     icon:"🦅", desc:"крылатый путник налегке", land:[70,120]},
+  {id:"courier", name:"Исключительный",   icon:"✨", desc:"тренированный курьер",     land:[150,250]}
+];
+function jft(){ return FLIGHT_TYPES.find(t=>t.id===flightTypeId)||FLIGHT_TYPES[1]; }
 function modeRange(mode){
+  if(mode==='flight') return jft().land;
   const T=jt(), s=a=>[Math.round(a[0]),Math.round(a[1])];
   if(mode==='train')     return T.steamTrain;
   if(mode==='steamSea')  return T.steamSea;
@@ -466,7 +493,9 @@ function modeRange(mode){
   if(mode==='steamUp')   return s([T.steamRiver[0]*STEAM_UP,   T.steamRiver[1]*STEAM_UP]);
   return mode==='sea'?T.sea : mode==='down'?T.riverDown : mode==='up'?T.riverUp : T.land;
 }
-const DETOUR_LAND=1.2, DETOUR_RIVER=1.12, DETOUR_SEA=1.06;
+const DETOUR_LAND=1.2, DETOUR_RIVER=1.12, DETOUR_SEA=1.06, DETOUR_FLIGHT=1.06;
+const RIVER=m=>m==='down'||m==='up'||m==='steamDown'||m==='steamUp';
+const detOf=m=>m==='flight'?DETOUR_FLIGHT:(m==='sea'||m==='steamSea')?DETOUR_SEA:(RIVER(m)?DETOUR_RIVER:DETOUR_LAND);
 // способы движения для отрисовки/подписей
 const MODE_META={
   land:{label:()=>jt().landLabel, icon:()=>jt().icon, color:"#caa14a"},
@@ -477,7 +506,8 @@ const MODE_META={
   train:    {label:()=>"паровозом",       icon:()=>"🚂", color:"#e0345e"},
   steamSea: {label:()=>"пароходом (море)",icon:()=>"🚢", color:"#8e44ad"},
   steamDown:{label:()=>"пароходом ↓",     icon:()=>"🚢", color:"#8e44ad"},
-  steamUp:  {label:()=>"пароходом ↑",     icon:()=>"🚢", color:"#7d3a9c"}
+  steamUp:  {label:()=>"пароходом ↑",     icon:()=>"🚢", color:"#7d3a9c"},
+  flight:   {label:()=>"полётом",         icon:()=>jft().icon, color:"#7fa8d8"}
 };
 
 /* ============================ СОСТОЯНИЕ ============================ */
@@ -489,11 +519,12 @@ let userTouched=false;                       // пока false — авто-вп
 let terrainGrid=null, gridCols=0, gridRows=0; // 0 море,1 суша,2 река
 let flowX=null, flowY=null;                   // вектор течения реки (к устью) на клетку
 let riverDist=null;                           // расстояние по реке до моря (клетки); меньше = ближе к устью
+let coastDist=null;                           // для клеток моря: расстояние в клетках до ближайшей суши (для полёта — узкие проливы)
 let zoneGrid=null;                            // паровой слой Сильвании/Креолии (0 нет,1 зона)
 let blockGrid=null;                           // непроходимая местность (0 нет,1 горы/льды) — маршрут огибает
 let waypoints=[];     // [{ix,iy,city?}]  координаты в px картинки
 let routePath=null;   // массив точек пути (px картинки) для отрисовки
-let typeId="fast", routeType="auto", legTypeId="fast";
+let typeId="fast", routeType="auto", legTypeId="fast", flightTypeId="fast", gateFlightAvailable=false;
 let labelsOn=true;          // DEV: true чтобы видеть расстановку. Для публикации сними галку.
 let highlight=null, pulseRAF=null;  // подсветка найденного города
 let draggingWp=null;                // индекс перетаскиваемой точки маршрута
@@ -518,23 +549,18 @@ function loadConfig(){
 // Приоритет данных:
 //  • обычный юзер → config.json из папки (опубликованные данные)
 //  • редактор (#editor) → localStorage (твоя рабочая копия), иначе config.json
-// EDITOR_DATA_VER: увеличивай на 1, когда на диске появились важные правки (новые страны и т.п.),
-// которые должны ОДИН РАЗ перебить твою локальную копию в браузере (без ручного импорта).
-const EDITOR_DATA_VER = 2;
+// ВАЖНО: НИКОГДА не перебивать localStorage данными с диска автоматически —
+// в редакторе localStorage это единственная копия твоих правок (маска/реки),
+// диск может быть старее. Обновлять диск с новыми данными — только через Импорт вручную.
 async function resolveConfig(){
   let base=structuredClone(DEFAULT_CONFIG), gotDisk=false, disk=null;
   try{
     const r=await fetch(verUrl('config.json'),{cache:'no-store'});
     if(r.ok){ disk=await r.json(); base=Object.assign(base, disk); gotDisk=true; }
   }catch(e){}
-  // В редакторе localStorage = твоя рабочая копия (правки не теряются при перезагрузке),
-  // НО если версия данных на диске новее сохранённой — один раз берём диск как есть.
-  const storedVer = Number(localStorage.getItem('riftMapDataVer')||0);
-  const useLocal = (EDITOR || !gotDisk) && storedVer===EDITOR_DATA_VER;
-  if(useLocal){
+  if(EDITOR || !gotDisk){
     try{ const s=localStorage.getItem('riftMapConfig'); if(s) base=Object.assign(base, JSON.parse(s)); }catch(e){}
   }
-  if(EDITOR) localStorage.setItem('riftMapDataVer', String(EDITOR_DATA_VER));
   // ПУТИ К ФАЙЛАМ КАРТ — всегда с диска/дефолта, не из localStorage (он мог устареть)
   base.mapSrc   = (disk&&disk.mapSrc)   || DEFAULT_CONFIG.mapSrc;
   base.mapAdmin = (disk&&disk.mapAdmin) || DEFAULT_CONFIG.mapAdmin;
@@ -567,16 +593,6 @@ function loadMap(src){
   };
   img.src=verUrl(src);
 }
-// «Отпечаток» карты — чтобы заметить, что подложили ДРУГОЙ файл
-function mapSignature(){
-  try{
-    const c=document.createElement('canvas'); c.width=32; c.height=24;
-    const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(img,0,0,32,24);
-    const d=x.getImageData(0,0,32,24).data; let s=0;
-    for(let i=0;i<d.length;i+=4) s=(s+d[i]*3+d[i+1]*5+d[i+2]*7)%1000000007;
-    return s;
-  }catch(e){ return null; }
-}
 // слой с отметками (админ-подложка) — грузим лениво при включении галки
 function ensureAnnotated(cb){
   if(imgAnnotated && imgAnnotated.complete && imgAnnotated.naturalWidth){ cb&&cb(); return; }
@@ -601,11 +617,9 @@ function initAfterLoad(tries){
   tries=tries||0;
   resize();
   if((!cv.width||!cv.height) && tries<80){ setTimeout(()=>initAfterLoad(tries+1),50); return; }
-  // карта изменилась (другой файл) -> маска пересоздаётся (только в редакторе)
-  const sig=mapSignature();
-  if(EDITOR && sig!=null && CFG.mapSig!=null && sig!==CFG.mapSig){ CFG.terrain=null; terrainGrid=null;
-    document.getElementById('topHint').textContent='✓ Замечена новая карта — маска воды пересоздана автоматически.'; }
-  if(EDITOR && sig!=null) CFG.mapSig=sig;
+  // Автосброс маски по «отпечатку картинки» УБРАН — он молча стирал нарисованную маску
+  // при малейшей разнице пикселей (пересжатие webp, разный браузер и т.п.), без подтверждения.
+  // Пересоздать маску под новую карту теперь можно только вручную, кнопкой ниже.
   if(!terrainGrid) buildTerrain();
   autoRefineGrid();          // мелкая сетка по умолчанию (один раз, без потери маски)
   userTouched=false; fitView();
@@ -772,6 +786,35 @@ function rdpSimplify(pts, eps){
     return l.slice(0,-1).concat(r); }
   return [a,b];
 }
+// «извилистость» дороги на карте: превращает отрезок p1->p2 в синусоиду, чья ДЛИНА ДУГИ
+// подобрана бинарным поиском так, чтобы точно равняться прямой×detour (тот же коэффициент,
+// что и в km-расчёте planRoute) — линия на карте визуально соответствует посчитанным км.
+function sineWiggleSeg(p1,p2,detour,teethLen){
+  const dx=p2.ix-p1.ix, dy=p2.iy-p1.iy, L=Math.hypot(dx,dy);
+  if(L<1e-6 || detour<=1.001 || L<teethLen*0.5) return [{ix:p2.ix,iy:p2.iy,mode:p2.mode}];
+  const N=Math.min(10,Math.max(1,Math.round(L/teethLen)));
+  const ux=dx/L, uy=dy/L, nx=-uy, ny=ux;
+  const SAMPLES=Math.max(8,N*8);
+  function arcLen(A){
+    let px=0,py=0,len=0;
+    for(let i=1;i<=SAMPLES;i++){ const t=i/SAMPLES, bx=t*L, by=A*Math.sin(2*Math.PI*N*t);
+      len+=Math.hypot(bx-px,by-py); px=bx; py=by; }
+    return len;
+  }
+  const target=L*detour;
+  let lo=0, hi=L;
+  for(let iter=0;iter<25;iter++){ const mid=(lo+hi)/2; if(arcLen(mid)<target) lo=mid; else hi=mid; }
+  const A=(lo+hi)/2, PTS=Math.max(6,N*6), out=[];
+  for(let i=1;i<=PTS;i++){ const t=i/PTS, bx=t*L, by=A*Math.sin(2*Math.PI*N*t);
+    out.push({ix:p1.ix+ux*bx+nx*by, iy:p1.iy+uy*bx+ny*by, mode:p2.mode}); }
+  return out;
+}
+function wigglePolyline(sp, detour){
+  if(sp.length<2 || detour<=1.001) return sp;
+  const teethLen=CFG.imgW*0.015, out=[sp[0]];
+  for(let i=1;i<sp.length;i++) for(const p of sineWiggleSeg(sp[i-1],sp[i],detour,teethLen)) out.push(p);
+  return out;
+}
 // гладкая линия по точкам (квадратичные кривые через середины рёбер)
 function strokeSmooth(P, straight){
   if(P.length<2) return;
@@ -792,7 +835,9 @@ function drawRoute(){
       const isPortal=run.mode==='portal';
       ctx.setLineDash(isPortal?[8,6]:[]); ctx.lineWidth=isPortal?3:4;
       ctx.strokeStyle=(MODE_META[run.mode]||MODE_META.land).color;
-      strokeSmooth(sp.map(p=>i2s(p.ix,p.iy)), isPortal);
+      // волним линию так, чтобы её длина дуги совпадала с km = прямая×detour (та же цифра, что в панели)
+      const drawn = isPortal ? sp : wigglePolyline(sp, detOf(run.mode));
+      strokeSmooth(drawn.map(p=>i2s(p.ix,p.iy)), isPortal);
     }
     ctx.setLineDash([]);
   }
@@ -958,6 +1003,21 @@ function buildRiverDist(){
 // направление шага по реке: >0 = вниз (к морю), <0 = вверх. Согласовано глобально.
 function riverDir(a,b){ const da=riverDist[a],db=riverDist[b];
   if(!isFinite(da)||!isFinite(db)) return 0; return da-db; }
+// для каждой морской клетки — расстояние в клетках до ближайшей суши/реки (BFS от берега вглубь моря).
+// нужно для полёта: узкий пролив (маленькое coastDist) перелетаем, открытое море (большое) — нет.
+function buildCoastDist(){
+  const N=gridCols*gridRows; coastDist=new Int32Array(N).fill(1e9);
+  if(!terrainGrid) return;
+  const nb=[1,-1,gridCols,-gridCols,gridCols+1,gridCols-1,-gridCols+1,-gridCols-1];
+  const ok=(c,ni)=>{ if(ni<0||ni>=N)return false; const cx=c%gridCols,nx=ni%gridCols; return Math.abs(nx-cx)<=1; };
+  const q=[]; let head=0;
+  for(let i=0;i<N;i++){ if(terrainGrid[i]===0) continue;
+    for(const d of nb){ const ni=i+d;
+      if(ok(i,ni) && terrainGrid[ni]===0 && coastDist[ni]===1e9){ coastDist[ni]=1; q.push(ni); } } }
+  while(head<q.length){ const c=q[head++]; for(const d of nb){ const ni=c+d;
+    if(ok(c,ni) && terrainGrid[ni]===0 && coastDist[ni]===1e9){ coastDist[ni]=coastDist[c]+1; q.push(ni); } } }
+}
+const FLIGHT_SEA_CROSS_CELLS=6;   // насколько глубоко в море можно залетать (узкий пролив, не открытый океан)
 // строим течение (всегда) и, по флагу, отмечаем клетки реки в маске
 function applyRivers(setTerrain){
   if(!terrainGrid)return;
@@ -1070,7 +1130,6 @@ function planRoute(ax,ay,bx,by,portA,portB){
     else { mode=z?'train':'land'; sp=z?STR:P.land; det=DETOUR_LAND; }
     step.push({bx2,by2,w,z,mode,sp,det});
   }
-  const RIVER=m=>m==='down'||m==='up'||m==='steamDown'||m==='steamUp';
   // 1) направление ЦЕЛОГО речного участка — по нетто-смещению к морю (riverDist),
   //    а не по каждой клетке. Иначе на широкой/петляющей реке вниз/вверх скачет.
   for(let i=0;i<step.length;){
@@ -1097,7 +1156,6 @@ function planRoute(ax,ay,bx,by,portA,portB){
   const raw=[{ix:(cells[0]%gridCols)*cw+cw/2, iy:((cells[0]/gridCols|0))*ch+ch/2, mode:step.length?step[0].mode:'land'}];
   for(const s of step) raw.push({ix:s.bx2*cw+cw/2, iy:s.by2*ch+ch/2, mode:s.mode});
   const eps=cw*1.8, kmpp=kmPerPx();
-  const detOf=m=>(m==='sea'||m==='steamSea')?DETOUR_SEA:(RIVER(m)?DETOUR_RIVER:DETOUR_LAND);
   const speedOf=m=>({land:P.land,train:STR,sea:seaSpeed||1,steamSea:SSV,down:P.riverDown,up:P.riverUp,steamDown:SRD,steamUp:SRU}[m]||P.land);
   const pts=[raw[0]]; const runs=[]; let totDays=0, totKm=0;
   for(const grp of routeRuns(raw)){
@@ -1111,6 +1169,57 @@ function planRoute(ax,ay,bx,by,portA,portB){
   if(portA && (Math.abs(pts[0].ix-ax)>cw||Math.abs(pts[0].iy-ay)>ch)) pts.unshift({ix:ax,iy:ay,mode:pts[0].mode});
   if(portB){ const L=pts[pts.length-1]; if(Math.abs(L.ix-bx)>cw||Math.abs(L.iy-by)>ch) pts.push({ix:bx,iy:by,mode:L.mode}); }
   return {pts, runs:mergeRuns(runs), km:totKm, days:totDays};
+}
+// Полёт: единая скорость (не зависит от суши/реки под маршрутом), непроходимые зоны и открытое
+// море — препятствие, узкие проливы/реки перелетаются свободно. Простой одномодовый A*.
+function planFlightRoute(ax,ay,bx,by){
+  if(!terrainGrid) return null;
+  const N=gridCols*gridRows;
+  if(!coastDist || coastDist.length!==N) buildCoastDist();
+  const blk=(blockGrid && blockGrid.length===N) ? blockGrid : new Uint8Array(N);
+  const spd=mid(jft().land);
+  const cellKmX=(CFG.imgW/gridCols)*kmPerPx();
+  const passable=idx=>{ if(blk[idx]===1) return false;
+    const t=terrainGrid[idx]; return t!==0 || coastDist[idx]<=FLIGHT_SEA_CROSS_CELLS; };
+  const gx=v=>Math.max(0,Math.min(gridCols-1,Math.round(v*gridCols/CFG.imgW)));
+  const gy=v=>Math.max(0,Math.min(gridRows-1,Math.round(v*gridRows/CFG.imgH)));
+  const snap=(x,y)=>{ if(passable(y*gridCols+x)) return [x,y];
+    for(let rad=1;rad<30;rad++)for(let dy=-rad;dy<=rad;dy++)for(let dx=-rad;dx<=rad;dx++){
+      const nx=x+dx,ny=y+dy; if(nx<0||nx>=gridCols||ny<0||ny>=gridRows)continue;
+      if(passable(ny*gridCols+nx)) return [nx,ny]; }
+    return [x,y]; };
+  let sx=gx(ax),sy=gy(ay),ex=gx(bx),ey=gy(by);
+  [sx,sy]=snap(sx,sy); [ex,ey]=snap(ex,ey);
+  const start=sy*gridCols+sx, goal=ey*gridCols+ex;
+  const g=new Float32Array(N).fill(Infinity), f=new Float32Array(N).fill(Infinity), came=new Int32Array(N).fill(-1);
+  const closed=new Uint8Array(N), open=new MinHeap();
+  const hday=(x,y)=>Math.hypot(x-ex,y-ey)*cellKmX/spd;
+  g[start]=0; f[start]=hday(sx,sy); open.push(start,f[start]);
+  const dirs=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.41421],[1,-1,1.41421],[-1,1,1.41421],[-1,-1,1.41421]];
+  let guard=0;
+  while(open.size){
+    const cur=open.pop(); if(closed[cur])continue; closed[cur]=1;
+    if(cur===goal) break;
+    if(++guard>N*4) break;
+    const cx=cur%gridCols, cy=(cur/gridCols)|0;
+    for(const[dx,dy,w] of dirs){
+      const nx=cx+dx,ny=cy+dy; if(nx<0||nx>=gridCols||ny<0||ny>=gridRows)continue;
+      const ni=ny*gridCols+nx; if(closed[ni]||!passable(ni))continue;
+      const ng=g[cur]+(w*cellKmX)/spd;
+      if(ng<g[ni]){ came[ni]=cur; g[ni]=ng; f[ni]=ng+hday(nx,ny); open.push(ni,f[ni]); }
+    }
+  }
+  if(goal!==start && came[goal]===-1) return null;
+  const cells=[]; let c=goal; while(c!==-1){cells.push(c);c=came[c];} cells.reverse();
+  if(cells.length<2) return null;
+  const cw=CFG.imgW/gridCols, ch=CFG.imgH/gridRows;
+  const raw=cells.map(c2=>({ix:(c2%gridCols)*cw+cw/2, iy:((c2/gridCols)|0)*ch+ch/2, mode:'flight'}));
+  const eps=cw*1.8, kmpp=kmPerPx();
+  const simp=rdpSimplify(raw, eps);
+  let len=0; for(let i=1;i<simp.length;i++) len+=Math.hypot(simp[i].ix-simp[i-1].ix, simp[i].iy-simp[i-1].iy);
+  const km=len*kmpp*DETOUR_FLIGHT, days=km/(spd||1);
+  const pts=simp.map(p=>({ix:p.ix, iy:p.iy, mode:'flight'}));
+  return {pts, runs:[{mode:'flight', km, days}], km, days};
 }
 // сливаем крошечные куски (<0.4 дня), чтобы не было «лапши» из чередований
 function mergeRuns(runs){
@@ -1144,10 +1253,12 @@ function computeRoute(){
   const J=document.getElementById('journey');
   if(waypoints.length<2){ J.innerHTML='<div class="muted">Поставьте минимум 2 точки</div>'; draw(); return; }
   if(typeId==='portal'){ computePortalRoute(J); return; }
+  const isFlight=routeType==='flight';
   let allPts=[], allRuns=[], totKm=0, failed=false;
   for(let i=0;i<waypoints.length-1;i++){
     const a=waypoints[i], b=waypoints[i+1];
-    const res=planRoute(a.ix,a.iy,b.ix,b.iy, !!(a.city&&a.city.port), !!(b.city&&b.city.port));
+    const res=isFlight ? planFlightRoute(a.ix,a.iy,b.ix,b.iy)
+                        : planRoute(a.ix,a.iy,b.ix,b.iy, !!(a.city&&a.city.port), !!(b.city&&b.city.port));
     if(!res){ failed=true; continue; }
     if(i===0) allPts=res.pts.slice(); else allPts=allPts.concat(res.pts);
     totKm+=res.km;
@@ -1162,10 +1273,11 @@ function computeRoute(){
       html+=`<div class="seg"><span class="from">${m.icon()} ${fmtRange(dMin,dMax)} ${m.label()}</span>`+
             `<span class="km">${Math.round(r.km).toLocaleString('ru')} км</span></div>`; });
     html+=`<div class="total"><span>Итого</span><b>${fmtRange(totMin,totMax)}</b></div>`;
-    html+=`<div class="seg" style="border:none"><span class="from">${jt().icon} ${jt().name}</span>`+
+    const summ = isFlight ? jft() : jt();
+    html+=`<div class="seg" style="border:none"><span class="from">${summ.icon} ${summ.name}</span>`+
           `<span class="km">${Math.round(totKm).toLocaleString('ru')} км</span></div>`;
   } else html='<div class="muted">Маршрут не найден</div>';
-  if(failed) html+=`<div class="warn">⚠ Часть пути не построилась для типа «${routeType==='water'?'только вода':routeType==='land'?'только суша':'авто'}». Попробуй «Авто».</div>`;
+  if(failed) html+=`<div class="warn">⚠ Часть пути не построилась для типа «${routeType==='water'?'только вода':routeType==='land'?'только суша':routeType==='flight'?'полёт':'авто'}». Попробуй «Авто».</div>`;
   J.innerHTML=html; draw();
 }
 // маршрут через Врата: премиум + эконом, с плечами и переходом между порталов
@@ -1272,10 +1384,15 @@ function computeGate(a,b){
   if(aNo){ const n=nearestGateCity(a); if(n) ga=n.city; }
   if(bNo){ const n=nearestGateCity(b); if(n) gb=n.city; }
   const gkm=Math.round(kmBetween(ga,gb)), t=gateTime(gkm);
-  const savedRT=routeType, savedT=typeId; routeType='auto'; typeId=legTypeId;   // плечи считаем выбранным темпом
-  const legA = (ga!==a) ? planRoute(a.nx*CFG.imgW,a.ny*CFG.imgH, ga.nx*CFG.imgW,ga.ny*CFG.imgH, !!a.port, !!ga.port) : null;
-  const legB = (gb!==b) ? planRoute(gb.nx*CFG.imgW,gb.ny*CFG.imgH, b.nx*CFG.imgW,b.ny*CFG.imgH, !!gb.port, !!b.port) : null;
-  routeType=savedRT; typeId=savedT;
+  const savedRT=routeType, savedT=typeId, savedFT=flightTypeId;
+  routeType='auto'; typeId=legTypeId; flightTypeId=legTypeId;   // плечи считаем выбранным темпом (id темпов совпадают у обычных и полёта)
+  let legA = (ga!==a) ? planRoute(a.nx*CFG.imgW,a.ny*CFG.imgH, ga.nx*CFG.imgW,ga.ny*CFG.imgH, !!a.port, !!ga.port) : null;
+  let legB = (gb!==b) ? planRoute(gb.nx*CFG.imgW,gb.ny*CFG.imgH, b.nx*CFG.imgW,b.ny*CFG.imgH, !!gb.port, !!b.port) : null;
+  if(gateFlightAvailable){   // «Уникальное: доступность полёта» — берём полёт, если он быстрее плеча
+    if(ga!==a){ const f=planFlightRoute(a.nx*CFG.imgW,a.ny*CFG.imgH, ga.nx*CFG.imgW,ga.ny*CFG.imgH); if(f && (!legA || f.days<legA.days)) legA=f; }
+    if(gb!==b){ const f=planFlightRoute(gb.nx*CFG.imgW,gb.ny*CFG.imgH, b.nx*CFG.imgW,b.ny*CFG.imgH); if(f && (!legB || f.days<legB.days)) legB=f; }
+  }
+  routeType=savedRT; typeId=savedT; flightTypeId=savedFT;
   return {aNo,bNo,ga,gb,gkm,premium:t.premium,econom:t.econom,legA,legB};
 }
 function legDays(res){ if(!res||!res.runs)return 0; let d=0; res.runs.forEach(rn=>{const rng=modeRange(rn.mode); d+=rn.km/((rng[0]+rng[1])/2);}); return d; }
@@ -1309,7 +1426,7 @@ cv.addEventListener('pointerdown',e=>{
   }
   const ip=s2i(mx,my);
   // зажат пробел -> всегда панорама (даже в режимах кисти/рисования)
-  if(spaceHeld){ drag={mx,my, vx:view.x, vy:view.y, moved:false, ip}; cv.classList.add('grabbing'); return; }
+  if(spaceHeld){ drag={mx,my, vx:view.x, vy:view.y, moved:false, ip, spacePan:true}; cv.classList.add('grabbing'); return; }
   // редактор-инструменты
   if(EDITOR){
     if(editor.calibrating){ handleCalib(ip); return; }
@@ -1393,8 +1510,8 @@ cv.addEventListener('pointerup',e=>{
     return; }
   if(drag&&drag.paint){ const t=editor.tool; drag=null;
     if(t==='blockAdd'||t==='blockDel') saveBlock(); else if(t==='zoneAdd'||t==='zoneDel') saveZone(); else saveTerrain(); return; }
-  if(drag&&!drag.moved && !(EDITOR&&editor.tool!=='pan')){
-    // клик = поставить точку маршрута (только во вкладке "Путь")
+  if(drag&&!drag.moved && !drag.spacePan && !(EDITOR&&editor.tool!=='pan')){
+    // клик = поставить точку маршрута (только во вкладке "Путь"). Зажатый пробел — только панорама, без мисклика.
     if(document.getElementById('tab-route').style.display!=='none') addWaypoint(drag.ip);
   }
   drag=null;
@@ -1410,8 +1527,9 @@ function cityTypeName(t){ return t==='capital'?'Столица':t==='capnp'?'С�
 function escTip(s){ return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 function showCityTip(c,clientX,clientY){
   const el=document.getElementById('cityTip'); if(!el) return;
-  const typeCountry=cityTypeName(c.type)+(c.country?', '+escTip(c.country):'');
+  const typeCountry=escTip(c.typeLabel||cityTypeName(c.type))+(c.country?', '+escTip(c.country):'');
   let h='<b>'+escTip(c.name||'Город')+'</b><span class="ct-type">'+typeCountry+'</span>';
+  if(c.feod) h+='<span class="ct-feod">'+escTip(c.feod)+'</span>';
   if(hasGate(c)) h+='<span class="ct-line"><span class="ct-em">🌀</span>Есть портал</span>';
   if(c.port)     h+='<span class="ct-line"><span class="ct-em">⚓</span>Есть порт</span>';
   if(c.type==='cursed') h+='<span class="ct-line"><span class="ct-em">💀</span>Проклятая Декада (с 18 июня 9986 г.)</span>';
@@ -1499,11 +1617,17 @@ document.querySelectorAll('#layerTabs .tab').forEach(t=>t.onclick=()=>{
 document.getElementById('persona').onchange=e=>{ if(routeType!=='portal') typeId=e.target.value; renderType(); computeRoute(); };
 document.getElementById('routeType').onchange=e=>{
   routeType=e.target.value;
-  if(routeType==='portal'){ typeId='portal'; document.getElementById('legPaceBox').style.display='block'; }
-  else { typeId=document.getElementById('persona').value; document.getElementById('legPaceBox').style.display='none'; }
+  document.getElementById('legPaceBox').style.display='none';
+  document.getElementById('flightPaceBox').style.display='none';
+  document.getElementById('personaBox').style.display='block';
+  if(routeType==='portal'){ typeId='portal'; document.getElementById('legPaceBox').style.display='block'; document.getElementById('personaBox').style.display='none'; }
+  else if(routeType==='flight'){ typeId=document.getElementById('persona').value; document.getElementById('flightPaceBox').style.display='block'; document.getElementById('personaBox').style.display='none'; }
+  else { typeId=document.getElementById('persona').value; }
   computeRoute();
 };
 document.getElementById('legPace').onchange=e=>{ legTypeId=e.target.value; computeRoute(); };
+document.getElementById('gateFlight').onchange=e=>{ gateFlightAvailable=e.target.checked; computeRoute(); };
+document.getElementById('flightPace').onchange=e=>{ flightTypeId=e.target.value; computeRoute(); };
 function renderType(){ /* чипы убраны — скорости в модалке «Информация» */ }
 // Таблицы для блока «Информация» (генерятся из данных, всегда актуальны)
 // маленькая SVG-иконка метки города — 1-в-1 как на карте (для легенды, не эмодзи)
@@ -1520,21 +1644,9 @@ function cityGlyph(type){
   return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" style="vertical-align:-4px;margin-right:2px">${g}</svg>`;
 }
 function infoHtml(){
-  const r=a=>`${Math.round(a[0])}–${Math.round(a[1])}`;
-  let h=`<h2 class="info-title">${EDITOR?'Скорости и способы':'Как пользоваться'}</h2>`;
-  if(EDITOR){   // таблицы скоростей — только админу
-    h+=`<div class="days" style="text-align:center;margin-bottom:8px">км/день · диапазон мин–макс. Маршрут сам берёт быстрейшую смесь.</div>`;
-    h+=`<div class="info-sec">Обычный транспорт</div>`;
-    h+=`<table><tr><th>Тип пути</th><th>🚶🐎📯 Суша</th><th>🛶 Река ↓ / ↑</th><th>⚓ Море</th></tr>`;
-    TYPES.forEach(t=>{ h+=`<tr><td>${t.name}</td><td class="r">${r(t.land)}</td><td class="r">${r(t.riverDown)} / ${r(t.riverUp)}</td><td class="r">${r(t.sea)}</td></tr>`; });
-    h+=`</table>`;
-    h+=`<div class="info-sec">🚂🚢 Паровая зона — Сильвания / Креолия</div>`;
-    h+=`<table><tr><th>Тип пути</th><th>🚂 Паровоз</th><th>🚢 Река (база)</th><th>🚢 Море</th></tr>`;
-    TYPES.forEach(t=>{ h+=`<tr><td>${t.name}</td><td class="r">${r(t.steamTrain)}</td><td class="r">${r(t.steamRiver)}</td><td class="r">${r(t.steamSea)}</td></tr>`; });
-    h+=`</table>`;
-    h+=`<div class="days">Речной пароход: вниз ×${STEAM_DOWN}, вверх ×${STEAM_UP}. Паровозы/пароходы — только внутри зоны.</div>`;
-  }
-  h+=`<div class="info-sec">Время в пути — это диапазон</div>`;
+  const r0=a=>`${Math.round(a[0])}–${Math.round(a[1])}`;
+  const r=a=>`${r0(a)} км`;
+  let h=`<div class="info-sec">Время в пути — это диапазон</div>`;
   h+=`<div class="info-note">Расчёт времени вашего путешествия — это диапазон, который может быть достаточно широким. В пределах выбранного типа передвижения скорость зависит от многих факторов: есть ли груз или путешествие налегке, спешит ли обоз/капитан, или вы сели на более медленное торговое судно, гружёное товарами, и так далее.</div>`;
   h+=`<div class="info-sec">Как считается</div>`;
   h+=`<ul class="info-ul">`+
@@ -1542,13 +1654,30 @@ function infoHtml(){
      `<li>В Сильвании и Креолии — 🚂 паровозы и 🚢 пароходы.</li>`+
      `<li>🌀 Врата Титанов — магический переход между городами с порталами. Сам переход достаточно быстрый, а указанное время — это магический ритуал подготовки перед переходом. Если есть пересадки — также заложено время на трансфер. Из-за него переходы с пересадками — дольше, зато они существенно доступнее по цене. Прямые переходы — для очень состоятельных и налегке.</li>`+
      `<li>В Сильвании и Креолии Врат нет: до границы добираются обычным путём, дальше — паром или поезд.</li>`+
+     `<li>🦅 Полёт доступен только летающим расам и редким ездовым животным — дорогим и сложно приручаемым. Летят почти по прямой, только над сушей: реки и неширокие проливы перелетают свободно, а непроходимые зоны и открытое море — нет.</li>`+
      `</ul>`;
   h+=`<div class="info-sec">Метки городов</div>`;
   h+=`<div class="days legend">`+
      `${cityGlyph('capital')} столица · ${cityGlyph('capnp')} столица без портала · ${cityGlyph('city')} город с порталом · ${cityGlyph('town')} город · ${cityGlyph('cursed')} проклятый`+
      `</div>`;
   h+=`<div class="info-sec">Транспорт</div>`;
-  h+=`<div class="days">🚶 пешком · 🐎 верхом · 📯 курьером · 🛶 лодка · ⚓ морем · 🚂 паровоз · 🚢 пароход</div>`;
+  h+=`<div class="days">🚶 пешком · 🐎 верхом · 📯 курьером · 🛶 рекой · ⚓ морем · 🚂 паровозом · 🚢 пароходом · 🦅 полётом</div>`;
+  h+=`<h2 class="info-title">Таблицы скоростей</h2>`;
+  h+=`<div class="days" style="text-align:center;margin-bottom:8px">км/день · диапазон мин–макс. Маршрут сам берёт быстрейшую смесь.</div>`;
+  h+=`<div class="info-sec">Обычный транспорт</div>`;
+  h+=`<table><tr><th>Тип пути</th><th>🚶🐎📯 Суша</th><th>🛶 Река ↓ / ↑</th><th>⚓ Море</th></tr>`;
+  TYPES.forEach(t=>{ h+=`<tr><td>${t.name}</td><td class="r">${r(t.land)}</td><td class="r">${r0(t.riverDown)} / ${r(t.riverUp)}</td><td class="r">${r(t.sea)}</td></tr>`; });
+  h+=`</table>`;
+  h+=`<div class="info-sec">🚂🚢 Паровая зона — Сильвания, Креолия</div>`;
+  h+=`<table><tr><th>Тип пути</th><th>🚂 Паровоз</th><th>🚢 Река (база)</th><th>🚢 Море</th></tr>`;
+  TYPES.forEach(t=>{ h+=`<tr><td>${t.name}</td><td class="r">${r(t.steamTrain)}</td><td class="r">${r(t.steamRiver)}</td><td class="r">${r(t.steamSea)}</td></tr>`; });
+  h+=`</table>`;
+  h+=`<div class="days">Речной пароход: вниз по течению ×${STEAM_DOWN}, вверх ×${STEAM_UP}. Паровозы и пароходы — ходят только внутри зоны.</div>`;
+  h+=`<div class="info-sec">🦅 Полёт — только летающие расы или редкие маунты</div>`;
+  h+=`<table><tr><th>Тип пути</th><th>🦅 Скорость</th></tr>`;
+  FLIGHT_TYPES.forEach(t=>{ h+=`<tr><td>${t.name} (${t.desc})</td><td class="r">${r(t.land)}</td></tr>`; });
+  h+=`</table>`;
+  h+=`<div class="days">Единая скорость, детур ×${DETOUR_FLIGHT}. Летают только над сушей (включая реки и неширокие проливы), непроходимые зоны и открытое море — нет.</div>`;
   return h;
 }
 
@@ -1640,6 +1769,8 @@ function addCityAt(ip){
   document.getElementById('cmTitle').textContent='Новый город';
   document.getElementById('cmName').value=''; document.getElementById('cmType').value=lastCityType;  // помним последний выбор
   document.getElementById('cmCountry').value=nearestCountry(pendingCity.nx,pendingCity.ny);
+  document.getElementById('cmFeod').value='';
+  document.getElementById('cmTypeLabel').value='';
   document.getElementById('cmPort').checked=false;
   document.getElementById('cmWrap').checked=false;
   document.getElementById('cmDelete').style.display='none';
@@ -1652,6 +1783,8 @@ function editCity(i){
   document.getElementById('cmTitle').textContent='Изменить город';
   document.getElementById('cmName').value=c.name||''; document.getElementById('cmType').value=c.type||'town';
   document.getElementById('cmCountry').value=c.country||'';
+  document.getElementById('cmFeod').value=c.feod||'';
+  document.getElementById('cmTypeLabel').value=c.typeLabel||'';
   document.getElementById('cmPort').checked=!!c.port;
   document.getElementById('cmWrap').checked=!!c.wrap;
   document.getElementById('cmDelete').style.display='block';
@@ -1668,11 +1801,13 @@ function cmDeleteCity(){
 function cmConfirm(){
   const name=document.getElementById('cmName').value.trim(), type=document.getElementById('cmType').value;
   const country=document.getElementById('cmCountry').value.trim();
+  const feod=document.getElementById('cmFeod').value.trim();
+  const typeLabel=document.getElementById('cmTypeLabel').value.trim();
   const port=document.getElementById('cmPort').checked;
   const wrap=document.getElementById('cmWrap').checked;
   lastCityType=type;   // запоминаем выбранный тип на сессию
-  if(editingIdx>=0 && CFG.cities[editingIdx]){ CFG.cities[editingIdx].name=name; CFG.cities[editingIdx].type=type; CFG.cities[editingIdx].country=country; CFG.cities[editingIdx].port=port; CFG.cities[editingIdx].wrap=wrap; }
-  else if(pendingCity){ CFG.cities.push({name, type, country, port, wrap, nx:pendingCity.nx, ny:pendingCity.ny}); }
+  if(editingIdx>=0 && CFG.cities[editingIdx]){ CFG.cities[editingIdx].name=name; CFG.cities[editingIdx].type=type; CFG.cities[editingIdx].country=country; CFG.cities[editingIdx].feod=feod; CFG.cities[editingIdx].typeLabel=typeLabel; CFG.cities[editingIdx].port=port; CFG.cities[editingIdx].wrap=wrap; }
+  else if(pendingCity){ CFG.cities.push({name, type, country, feod, typeLabel, port, wrap, nx:pendingCity.nx, ny:pendingCity.ny}); }
   else { cmClose(); return; }
   saveConfig(); refreshCityList(); refreshGateSelects(); draw(); cmClose();
 }
@@ -1712,7 +1847,7 @@ function paintAt(ip){
 }
 // Сохранение маски: НЕ перештамповываем реки (иначе кисть не стёрла бы их).
 // Реки уже в маске (=2), линии нужны лишь для течения -> applyRivers(false).
-function saveTerrain(){ applyRivers(false); riverDist=null; CFG.terrain=Array.from(terrainGrid).join(''); saveConfig(); }
+function saveTerrain(){ applyRivers(false); riverDist=null; coastDist=null; CFG.terrain=Array.from(terrainGrid).join(''); saveConfig(); }
 // нанести ОДНУ реку в маску (при рисовании)
 // диск радиуса rad (в клетках) вокруг (cx,cy): val=новое значение; fromVal!=null — только поверх таких клеток
 function stampDisk(cx,cy,rad,val,fromVal){
