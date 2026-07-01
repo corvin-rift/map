@@ -1334,17 +1334,27 @@ function renderWaypoints(){
       if(from!=null && from!==to){ const [m]=waypoints.splice(from,1); waypoints.splice(to,0,m); computeRoute(); } from=null; });
   });
 }
+const MONTHS_THRESHOLD_DAYS=120;   // до ~4 месяцев считаем в днях (интуитивнее), дальше — «X мес Y дн»
 function dayUnit(d){
   if(d<1) return [Math.round(d*24),'ч'];
-  if(d<30) return [Math.round(d),'дн.'];
-  if(d<365) return [+(d/30).toFixed(1),'мес.'];
-  return [+(d/365).toFixed(1),'г.'];
+  return [Math.round(d),'дн.'];
+}
+function fmtDur(d){
+  if(d<1) return Math.round(d*24)+' ч';
+  if(d<MONTHS_THRESHOLD_DAYS) return Math.round(d)+' дн.';
+  if(d<365){ const totalDays=Math.round(d), months=Math.floor(totalDays/30), days=totalDays-months*30;
+    return days===0 ? `${months} мес` : `${months} мес ${days} дн`; }
+  return (+(d/365).toFixed(1)).toString().replace('.',',')+' г.';
 }
 function fmtRange(a,b){
-  const [va,ua]=dayUnit(a), [vb,ub]=dayUnit(b);
-  const s=v=>String(v).replace('.',',');
-  if(ua===ub) return va===vb ? `${s(va)} ${ua}` : `${s(va)}–${s(vb)} ${ua}`;
-  return `${s(va)} ${ua} – ${s(vb)} ${ub}`;
+  if(a<MONTHS_THRESHOLD_DAYS && b<MONTHS_THRESHOLD_DAYS){
+    const [va,ua]=dayUnit(a), [vb,ub]=dayUnit(b);
+    const s=v=>String(v).replace('.',',');
+    if(ua===ub) return va===vb ? `${s(va)} ${ua}` : `${s(va)}–${s(vb)} ${ua}`;
+    return `${s(va)} ${ua} – ${s(vb)} ${ub}`;
+  }
+  const sa=fmtDur(a), sb=fmtDur(b);
+  return sa===sb ? sa : `${sa} – ${sb}`;
 }
 function fmtDays(d){
   if(d<1) return Math.round(d*24)+" ч";
