@@ -88,7 +88,10 @@
    "nx": 0.4210523372177954,
    "ny": 0.7504531320450845,
    "country": "Италика",
-   "port": true
+   "port": true,
+   "feod": "",
+   "typeLabel": "Сердце Церкви",
+   "wrap": false
   },
   {
    "name": "Альедо",
@@ -272,7 +275,9 @@
    "ny": 0.9173701845324261,
    "country": "Вечный Дол",
    "port": false,
-   "wrap": false
+   "wrap": false,
+   "feod": "Княжество Обсидиана",
+   "typeLabel": "столица княжества"
   },
   {
    "name": "",
@@ -288,7 +293,9 @@
    "ny": 0.9578743189598868,
    "port": true,
    "wrap": true,
-   "country": "Белая Башня"
+   "country": "Белая Башня",
+   "feod": "",
+   "typeLabel": "город-государство"
   },
   {
    "name": "",
@@ -339,7 +346,11 @@
    "type": "city",
    "nx": 0.03815660288875595,
    "ny": 0.49525658361300945,
-   "country": "Тенеземье"
+   "country": "Зимний Дол",
+   "feod": "Княжество Молний",
+   "typeLabel": "",
+   "port": false,
+   "wrap": false
   },
   {
    "name": "",
@@ -364,7 +375,9 @@
    "ny": 0.4088582847657358,
    "country": "Зимний Дол",
    "port": false,
-   "wrap": false
+   "wrap": false,
+   "feod": "Княжество Скал",
+   "typeLabel": ""
   },
   {
    "name": "",
@@ -442,7 +455,10 @@
    "nx": 0.41107403370211953,
    "ny": 0.7250205370714422,
    "port": true,
-   "country": "Италика"
+   "country": "Италика",
+   "feod": "",
+   "typeLabel": "город-государство",
+   "wrap": false
   },
   {
    "name": "",
@@ -629,7 +645,10 @@
    "nx": 0.7126162963712467,
    "ny": 0.9433025779076617,
    "port": true,
-   "country": "Фараонат Та-Кемет"
+   "country": "Фараонат",
+   "feod": "",
+   "typeLabel": "",
+   "wrap": false
   },
   {
    "name": "",
@@ -637,7 +656,10 @@
    "nx": 0.6603866587175616,
    "ny": 0.9030748460908359,
    "port": true,
-   "country": "Султанат Полумесяца"
+   "country": "Султанат",
+   "feod": "",
+   "typeLabel": "",
+   "wrap": false
   },
   {
    "name": "",
@@ -823,7 +845,11 @@
    "type": "city",
    "nx": 0.26712345501547896,
    "ny": 0.9493701555107804,
-   "port": true
+   "port": true,
+   "country": "",
+   "feod": "",
+   "typeLabel": "плавучие острова-крепости",
+   "wrap": false
   },
   {
    "name": "Аргос",
@@ -857,14 +883,22 @@
    "type": "town",
    "nx": 0.16220069497631417,
    "ny": 0.6166207311878269,
-   "country": "Сарматия"
+   "country": "Вечный Дол",
+   "feod": "",
+   "typeLabel": "",
+   "port": false,
+   "wrap": false
   },
   {
    "name": "",
    "type": "town",
    "nx": 0.14839417003705344,
    "ny": 0.6283578292310267,
-   "country": "Сарматия"
+   "country": "Вечный Дол",
+   "feod": "",
+   "typeLabel": "",
+   "port": false,
+   "wrap": false
   },
   {
    "name": "",
@@ -1119,37 +1153,55 @@
    "type": "town",
    "nx": 0.6147620945739865,
    "ny": 0.8922423764417536,
-   "country": "Султанат Полумесяца"
+   "country": "Султанат",
+   "feod": "",
+   "typeLabel": "",
+   "port": false,
+   "wrap": false
   },
   {
    "name": "",
    "type": "town",
    "nx": 0.6615600607530564,
    "ny": 0.8513151228657928,
-   "country": "Султанат Полумесяца"
+   "country": "Султанат",
+   "feod": "",
+   "typeLabel": "",
+   "port": false,
+   "wrap": false
   },
   {
    "name": "",
    "type": "town",
    "nx": 0.6161459054018622,
    "ny": 0.8293418842655843,
-   "country": "Султанат Полумесяца"
+   "country": "Султанат",
+   "feod": "",
+   "typeLabel": "",
+   "port": false,
+   "wrap": false
   },
   {
    "name": "",
    "type": "town",
    "nx": 0.6438221219593767,
    "ny": 0.7800278983994676,
-   "country": "Небесный Анд"
+   "country": "Султанат",
+   "feod": "",
+   "typeLabel": "",
+   "port": false,
+   "wrap": false
   },
   {
    "name": "",
    "type": "town",
    "nx": 0.6697371247359585,
    "ny": 0.776337736191799,
-   "country": "Султанат Полумесяца",
+   "country": "Султанат",
    "port": false,
-   "wrap": false
+   "wrap": false,
+   "feod": "",
+   "typeLabel": ""
   },
   {
    "name": "",
@@ -1165,23 +1217,33 @@
    "type": "town",
    "nx": 0.7218187322578266,
    "ny": 0.8152521740181223,
-   "country": "Султанат Полумесяца"
-  },
-  {
-   "name": "",
-   "type": "town",
-   "nx": 0.7034567795034521,
-   "ny": 0.8783955331105671,
-   "country": "Фараонат Та-Кемет",
+   "country": "Атар-Дракен",
+   "feod": "",
+   "typeLabel": "",
    "port": false,
    "wrap": false
   },
   {
    "name": "",
    "type": "town",
+   "nx": 0.7034567795034521,
+   "ny": 0.8783955331105671,
+   "country": "Фараонат",
+   "port": false,
+   "wrap": false,
+   "feod": "",
+   "typeLabel": ""
+  },
+  {
+   "name": "",
+   "type": "town",
    "nx": 0.7135158672905723,
    "ny": 0.9581620922423789,
-   "country": "Фараонат Та-Кемет"
+   "country": "Фараонат",
+   "feod": "",
+   "typeLabel": "",
+   "port": false,
+   "wrap": false
   },
   {
    "name": "",
@@ -1789,6 +1851,17 @@
    "wrap": false,
    "nx": 0.5676510654337287,
    "ny": 0.4991429122229602
+  },
+  {
+   "name": "Афзайшахр",
+   "type": "town",
+   "country": "Авдрааскан",
+   "feod": "",
+   "typeLabel": "столица",
+   "port": false,
+   "wrap": false,
+   "nx": 0.6900703621743633,
+   "ny": 0.8518154691266004
   }
  ],
  "rivers": [
